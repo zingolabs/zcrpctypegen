@@ -1,6 +1,8 @@
 # zcashrpc
 
-This cargo workspace provides a few libraries useful for implementing `zcashd` RPC client as well as some utility binaries.
+This cargo workspace provides a few libraries useful for implementing
+`zcashd` RPC client using the `tokio` async I/O framework. It also
+includes some utility binaries.
 
 ## License
 
