@@ -3,7 +3,7 @@ use zcashrpc;
 
 #[derive(derive_more::From, Debug)]
 pub enum Error {
-    Reqwest(reqwest::Error),
+    ZcashRPC(zcashrpc::Error),
     Var(std::env::VarError),
 }
 
