@@ -2,12 +2,14 @@
 mod defreqresp;
 mod request;
 
-pub use request::Request;
+pub use self::request::Request;
 
 define_request_response! {
   getinfo {
       Request: {},
-      Response: {}
+      Response: {
+        blocks: u64,
+      }
   },
 
   getblockchaininfo {
