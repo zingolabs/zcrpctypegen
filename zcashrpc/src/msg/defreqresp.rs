@@ -16,6 +16,9 @@ macro_rules! define_request_response {
             pub mod $reqname {
                 use serde::{Deserialize, Serialize};
 
+                #[allow(unused_imports)]
+                use crate::msg::ZecAmount;
+
                 #[derive(Serialize, Deserialize, Debug)]
                 pub struct Request {
                     $(
@@ -24,6 +27,7 @@ macro_rules! define_request_response {
                 }
 
                 #[derive(Serialize, Deserialize, Debug)]
+                #[serde(deny_unknown_fields)]
                 pub struct Response $respbody
 
                 impl crate::msg::Request for Request {
