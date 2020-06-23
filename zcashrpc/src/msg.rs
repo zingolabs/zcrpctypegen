@@ -6,14 +6,14 @@ pub use self::request::Request;
 
 define_request_response! {
   getinfo {
-      Request: {},
+      Request: {}
       Response: {
         blocks: u64,
       }
   },
 
   getblockchaininfo {
-      Request: {},
+      Request: {}
       Response: {}
   }
 }
