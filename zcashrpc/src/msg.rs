@@ -1,5 +1,5 @@
 #[macro_use]
-mod defreqresp;
+mod defapi;
 mod request;
 
 pub use self::request::Request;
@@ -7,7 +7,7 @@ pub use self::request::Request;
 // TODO: Replace this with a lossless-precision decimal type:
 pub type ZecAmount = f64;
 
-define_request_response! {
+define_api! {
   getinfo {
       Request: {}
       Response: {

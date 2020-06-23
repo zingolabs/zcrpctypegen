@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! define_request_response {
+macro_rules! define_api {
     {
         $(
             $reqname:ident {
