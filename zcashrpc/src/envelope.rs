@@ -9,7 +9,7 @@ pub struct RequestEnvelope {
 }
 
 #[derive(Debug)]
-pub enum ResponseError<R> {
+pub enum ResponseEnvelopeError<R> {
     UnexpectedServerId { client: u64, server: u64 },
     NoResultOrError,
     ResultAndError { result: R, error: ServerError },
@@ -51,21 +51,21 @@ impl<R> ResponseEnvelope<R>
 where
     R: DeserializeOwned,
 {
-    pub fn unwrap(self, clientid: u64) -> Result<R, ResponseError<R>> {
+    pub fn unwrap(self, clientid: u64) -> Result<R, ResponseEnvelopeError<R>> {
         if self.id != clientid {
-            Err(ResponseError::UnexpectedServerId {
+            Err(ResponseEnvelopeError::UnexpectedServerId {
                 client: clientid,
                 server: self.id,
             })
         } else {
             match (self.result, self.error) {
-                (None, None) => Err(ResponseError::NoResultOrError),
-                (Some(r), Some(e)) => Err(ResponseError::ResultAndError {
+                (None, None) => Err(ResponseEnvelopeError::NoResultOrError),
+                (Some(r), Some(e)) => Err(ResponseEnvelopeError::ResultAndError {
                     result: r,
                     error: e,
                 }),
                 (Some(r), None) => Ok(r),
-                (None, Some(e)) => Err(ResponseError::Server(e)),
+                (None, Some(e)) => Err(ResponseEnvelopeError::Server(e)),
             }
         }
     }

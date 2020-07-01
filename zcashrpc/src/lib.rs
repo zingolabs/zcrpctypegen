@@ -8,6 +8,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::ops::RangeFrom;
 
+pub use envelope::ResponseEnvelopeError;
 pub type ZecAmount = f64;
 
 pub struct Client {
@@ -19,7 +20,7 @@ pub struct Client {
 
 #[derive(derive_more::From, Debug)]
 pub enum Error<R> {
-    Response(crate::envelope::ResponseError<R>),
+    Response(ResponseEnvelopeError<R>),
     Reqwest(reqwest::Error),
     Json(crate::json::Error),
 }
