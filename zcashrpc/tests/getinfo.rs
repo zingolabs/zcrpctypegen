@@ -12,7 +12,7 @@ pub enum Error {
 async fn getinfo() -> Result<(), Error> {
     let mut client = make_client()?;
     let resp = client.request(&getinfo::Request {}).await?;
-    assert_eq!("SSS", &format!("{:?}", &resp));
+    println!("{:?}", &resp);
     Ok(())
 }
 
