@@ -1,4 +1,4 @@
-use crate::msg::Request;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -38,19 +38,19 @@ impl<'a> From<&'a RequestEnvelope> for reqwest::Body {
 }
 
 impl RequestEnvelope {
-    pub fn wrap<R>(id: u64, req: R) -> RequestEnvelope
-    where
-        R: Request,
-    {
+    pub fn wrap(id: u64, method: &'static str, params: Vec<serde_json::Value>) -> RequestEnvelope {
         RequestEnvelope {
             id: id,
-            method: R::name(),
-            params: req.params(),
+            method: method,
+            params: params,
         }
     }
 }
 
-impl<R> ResponseEnvelope<R> {
+impl<R> ResponseEnvelope<R>
+where
+    R: DeserializeOwned,
+{
     pub fn unwrap(self, clientid: u64) -> Result<R, ResponseError<R>> {
         if self.id != clientid {
             Err(ResponseError::UnexpectedServerId {

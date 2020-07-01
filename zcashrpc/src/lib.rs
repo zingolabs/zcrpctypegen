@@ -1,6 +1,4 @@
-mod client;
+pub mod client; // TODO: Remove this level of hierarchy lifting here.
 mod json;
-
-pub mod msg;
 
 pub use self::client::{Client, Error};

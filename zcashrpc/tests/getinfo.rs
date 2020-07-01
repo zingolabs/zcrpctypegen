@@ -1,17 +1,16 @@
 use tokio;
 use zcashrpc;
-use zcashrpc::msg::getinfo;
 
 #[derive(derive_more::From, Debug)]
 pub enum Error {
-    ZcashRPC(zcashrpc::Error<getinfo::Response>),
+    ZcashRPC(zcashrpc::Error<zcashrpc::client::GetInfoResponse>),
     Var(std::env::VarError),
 }
 
 #[tokio::test]
 async fn getinfo() -> Result<(), Error> {
     let mut client = make_client()?;
-    let resp = client.request(&getinfo::Request {}).await?;
+    let resp = client.getinfo().await?;
     println!("{:?}", &resp);
     Ok(())
 }

@@ -1,9 +1,13 @@
 mod envelope;
+#[macro_use]
+mod defapi;
 
-use self::envelope::RequestEnvelope;
-use crate::msg::Request;
 use reqwest;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::ops::RangeFrom;
+
+pub type ZecAmount = f64;
 
 pub struct Client {
     url: String,
@@ -29,14 +33,15 @@ impl Client {
         }
     }
 
-    pub async fn request<'a, R>(
+    async fn make_request<R>(
         &mut self,
-        request: &'a R,
-    ) -> Result<R::Response, Error<R::Response>>
+        method: &'static str,
+        args: Vec<serde_json::Value>,
+    ) -> Result<R, Error<R>>
     where
-        R: Request,
+        R: DeserializeOwned,
     {
-        use self::envelope::ResponseEnvelope;
+        use self::envelope::{RequestEnvelope, ResponseEnvelope};
         use crate::json;
 
         let id = self.idit.next().unwrap();
@@ -44,13 +49,32 @@ impl Client {
             .reqcli
             .post(&self.url)
             .header("Authorization", &self.auth)
-            .body(&RequestEnvelope::wrap(id, request))
+            .body(&RequestEnvelope::wrap(id, method, args))
             .send()
             .await?;
-
         let text = reqresp.text().await?;
-        let respenv: ResponseEnvelope<R::Response> = json::parse_string(text)?;
+        let respenv: ResponseEnvelope<R> = json::parse_string(text)?;
         let resp = respenv.unwrap(id)?;
         Ok(resp)
+    }
+}
+
+def_api_method! {
+    getinfo() -> GetInfoResponse {
+balance: ZecAmount,
+             blocks: u64,
+             connections: u64,
+             difficulty: f64,
+             errors: String,
+             keypoololdest: u64,
+             keypoolsize: u64,
+             paytxfee: ZecAmount,
+             protocolversion: u64,
+             proxy: String,
+             relayfee: ZecAmount,
+             testnet: bool,
+             timeoffset: u64,
+             version: u64,
+             walletversion: u64
     }
 }
