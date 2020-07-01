@@ -20,9 +20,9 @@ pub enum Error<R> {
 }
 
 impl Client {
-    pub fn new(host: String, authcookie: String) -> Client {
+    pub fn new(hostport: String, authcookie: String) -> Client {
         Client {
-            url: format!("http://{}/", host),
+            url: format!("http://{}/", hostport),
             auth: format!("Basic {}", authcookie),
             reqcli: reqwest::Client::new(),
             idit: (0..),
