@@ -1,31 +1,29 @@
-use serde_json;
+use crate::ResponseResult;
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 
-#[derive(Debug)]
-pub struct Error {
-    detail: serde_json::Error,
-    input: MalformedInput,
-}
+pub fn parse_string(s: String) -> ResponseResult<Value> {
+    use crate::error::JsonRpcViolation::MalformedJson;
+    use serde_json::from_str;
 
-#[derive(Debug)]
-pub enum MalformedInput {
-    Json(String),
-    Structure(serde_json::Value),
-}
-
-pub fn parse_string<T>(s: String) -> Result<T, Error>
-where
-    T: serde::de::DeserializeOwned,
-{
-    use serde_json::{from_str, from_value, Value};
-
-    let val: Value = from_str(&s).map_err(move |e| Error {
-        detail: e,
-        input: MalformedInput::Json(s),
+    let val: Value = from_str(&s).map_err(move |e| MalformedJson {
+        input_text: s,
+        reason: e,
     })?;
 
-    let obj = from_value(val.clone()).map_err(move |e| Error {
-        detail: e,
-        input: MalformedInput::Structure(val),
+    Ok(val)
+}
+
+pub fn parse_value<R>(val: Value) -> ResponseResult<R>
+where
+    R: DeserializeOwned,
+{
+    use crate::error::UnexpectedResponse;
+    use serde_json::from_value;
+
+    let obj = from_value(val.clone()).map_err(move |e| UnexpectedResponse {
+        structure: val,
+        reason: e,
     })?;
 
     Ok(obj)

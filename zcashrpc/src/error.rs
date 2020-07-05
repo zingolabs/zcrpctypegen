@@ -1,24 +1,54 @@
-use crate::envelope::ResponseEnvelopeError;
-use crate::json::JsonError;
+//! The `error` mod includes types representing specific errors which are all bundled into the top-level `Error` enum.
 
-/// An `Error<R>` represents errors encountered in making an RPC
-/// request. The parameter `R` is for the response type which is specific
-/// to each method, and only appears in the `ResponseEnvelopeError` case.
-#[derive(derive_more::From, Debug)]
-pub enum Error<R> {
-    /// A `ResponseEnvelopeError<R>` represents either application-level
-    /// error from `zcashd` or a failure to adhere to expected JSON RPC
-    /// protocol semantics.
-    Response(ResponseEnvelopeError<R>),
+use serde::{Deserialize, Serialize};
 
-    /// A `Reqwest::Error` comes directly from the `reqwest` HTTP client
-    /// dependency, and these errors represent HTTP-level errors.
-    Reqwest(reqwest::Error),
+/// A `ResponseResult<R>` is a convenience type-alias for `Result<R, Error>`.
+pub type ResponseResult<R> = Result<R, Error>;
 
-    /// A `json::Error` represents a JSON deserialization error, which
-    /// includes "structural" mismatches between what this client expects
-    /// versus what the server replied with. For example, if this library
-    /// expects an integer JSON value but finds a string, the error is
-    /// captured with this case.
-    Json(JsonError),
+/// An `Error` represents errors encountered in making an RPC request, and encompasses application-level error responses, protocol errors, and transient failures.
+#[derive(Debug, derive_more::From)]
+pub enum Error {
+    /// A `Response` represents an application-level error sent back from `zcashd`.
+    Response(ResponseError),
+
+    /// An `UnexpectedResponse` occurs when the server sends a successful response which doesn't match this crate's expected structure or types.
+    UnexpectedResponse(UnexpectedResponse),
+
+    /// A `JsonRpcViolation` indicates the `zcashd` server violates this library's expectation about JSONRPC protocol. These should not occur if this crate has thorough integration tests against the specific version of `zcashd` on the server-side.
+    JsonRpcViolation(JsonRpcViolation),
+
+    /// The `Http` variant indicates some HTTP-layer error and passes errors directly from the `reqwest` HTTP client dependency.
+    Http(reqwest::Error),
+}
+
+/// The `ResponseError` represents any application-level error sent from `zcashd`.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ResponseError {
+    pub code: i64,
+    pub message: String,
+}
+
+/// An `UnexpectedResponse` occurs when `zcashd` responds with valid JSON that doesn't match the expected types of this crate.
+#[derive(Debug)]
+pub struct UnexpectedResponse {
+    pub structure: serde_json::Value,
+    pub reason: serde_json::Error,
+}
+
+/// A `JsonRpcViolation` occurs when `zcashd` responds with malformed JSON or with a response envelope that violates this crate's assumed JSONRPC protocol invariants.
+#[derive(Debug)]
+pub enum JsonRpcViolation {
+    MalformedJson {
+        input_text: String,
+        reason: serde_json::Error,
+    },
+    UnexpectedServerId {
+        client: u64,
+        server: u64,
+    },
+    NoResultOrError,
+    ResultAndError {
+        result: serde_json::Value,
+        error: ResponseError,
+    },
 }

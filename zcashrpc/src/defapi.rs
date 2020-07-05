@@ -9,7 +9,7 @@ macro_rules! def_api_method {
         }
 
         impl Client {
-            pub async fn $reqname ( &mut self, $( $argname : $argtype ),* ) -> Result<$respname, Error<$respname>> {
+            pub async fn $reqname ( &mut self, $( $argname : $argtype ),* ) -> ResponseResult<$respname> {
                 let args = vec![
                     $(
                             serde_json::to_value($argname)?
