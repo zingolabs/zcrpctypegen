@@ -3,7 +3,7 @@ macro_rules! def_api_method {
      $reqname:ident ( $( $argname:ident : $argtype:ty ),* ) ->
      $respname:ident { $( $fname:ident : $ftype:ty ),* }
     ) => {
-#[derive(Debug, Deserialize, Serialize)]
+        #[derive(Debug, Deserialize, Serialize)]
         pub struct $respname {
             $( $fname : $ftype ),*
         }
