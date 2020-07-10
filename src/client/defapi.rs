@@ -5,7 +5,7 @@ macro_rules! def_api_method {
     ) => {
         #[derive(Debug, Deserialize, Serialize)]
         pub struct $respname {
-            $( $fname : $ftype ),*
+            $( pub $fname : $ftype ),*
         }
 
         impl Client {
