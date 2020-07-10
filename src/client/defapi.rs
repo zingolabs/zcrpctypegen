@@ -4,6 +4,7 @@ macro_rules! def_api_method {
      $respname:ident { $( $fname:ident : $ftype:ty ),* }
     ) => {
         #[derive(Debug, Deserialize, Serialize)]
+        #[allow(non_snake_case)]
         pub struct $respname {
             $( pub $fname : $ftype ),*
         }
