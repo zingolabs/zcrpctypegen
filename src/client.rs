@@ -59,20 +59,20 @@ impl Client {
 
 def_api_method! {
     getinfo() -> GetInfoResponse {
-balance: ZecAmount,
-             blocks: u64,
-             connections: u64,
-             difficulty: f64,
-             errors: String,
-             keypoololdest: u64,
-             keypoolsize: u64,
-             paytxfee: ZecAmount,
-             protocolversion: u64,
-             proxy: String,
-             relayfee: ZecAmount,
-             testnet: bool,
-             timeoffset: u64,
-             version: u64,
-             walletversion: u64
+        balance: ZecAmount,
+        blocks: u64,
+        connections: u64,
+        difficulty: f64,
+        errors: String,
+        keypoololdest: u64,
+        keypoolsize: u64,
+        paytxfee: ZecAmount,
+        protocolversion: u64,
+        proxy: String,
+        relayfee: ZecAmount,
+        testnet: bool,
+        timeoffset: u64,
+        version: u64,
+        walletversion: u64
     }
 }
