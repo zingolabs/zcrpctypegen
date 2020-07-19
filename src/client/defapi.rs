@@ -10,14 +10,14 @@ macro_rules! def_api_method {
         }
 
         impl Client {
-            pub async fn $reqname ( &mut self, $( $argname : $argtype ),* ) -> ResponseResult<$respname> {
+            pub fn $reqname ( &mut self, $( $argname : $argtype ),* ) -> impl Future<Output=ResponseResult<$respname>> {
                 let args = vec![
                     $(
                             serde_json::to_value($argname)?
                      ),*
                 ];
 
-                self.make_request(stringify!($reqname), args).await
+                self.make_request(stringify!($reqname), args)
             }
         }
     }
