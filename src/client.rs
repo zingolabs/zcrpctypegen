@@ -1,13 +1,12 @@
 //! Includes both `Client` and all of the RPC response types.
 #[macro_use]
-mod defapi;
+mod callrpc;
 pub mod subcomponents;
 
-use self::subcomponents::{Consensus, NetworkUpgradeDesc, Softfork, ValuePool};
-use crate::{ResponseResult, ZecAmount};
+use self::subcomponents::{GetBlockChainInfoResponse, GetInfoResponse};
+use crate::ResponseResult;
 use reqwest;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::ops::RangeFrom;
 
@@ -31,46 +30,16 @@ impl Client {
             idit: (0..),
         }
     }
-}
 
-def_api_method! {
-    getinfo() -> GetInfoResponse {
-balance: ZecAmount,
-             blocks: u64,
-             connections: u64,
-             difficulty: f64,
-             errors: String,
-             keypoololdest: u64,
-             keypoolsize: u64,
-             paytxfee: ZecAmount,
-             protocolversion: u64,
-             proxy: String,
-             relayfee: ZecAmount,
-             testnet: bool,
-             timeoffset: u64,
-             version: u64,
-             walletversion: u64
+    // RPC methods:
+    pub fn getinfo(&mut self) -> impl Future<Output = ResponseResult<GetInfoResponse>> {
+        rpc_call!(self.getinfo())
     }
-}
 
-def_api_method! {
-    getblockchaininfo() -> GetBlockChainInfoResponse {
-chain: String,
-           blocks: u64,
-           headers: u64,
-           bestblockhash: String,
-           difficulty: f64,
-           verificationprogress: f64,
-           chainwork: String,
-           pruned: bool,
-           size_on_disk: u64,
-           commitments: u64,
-           valuePools: Vec<ValuePool>,
-           softforks: Vec<Softfork>,
-           upgrades: std::collections::HashMap<String, NetworkUpgradeDesc>,
-           consensus: Consensus,
-           pruneheight: Option<u64>,
-           fullyNotified: Option<bool>
+    pub fn getblockchaininfo(
+        &mut self,
+    ) -> impl Future<Output = ResponseResult<GetBlockChainInfoResponse>> {
+        rpc_call!(self.getblockchaininfo())
     }
 }
 
