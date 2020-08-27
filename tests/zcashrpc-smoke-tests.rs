@@ -6,7 +6,7 @@ use zcashrpc::Client;
 #[derive(Debug)]
 struct TestsFailed;
 
-#[tokio::main]
+#[tokio::test]
 async fn main() -> Result<(), TestsFailed> {
     let mut runner = Runner::new();
 
