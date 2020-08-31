@@ -1,3 +1,4 @@
+use base64::encode;
 use std::fmt::Debug;
 use std::future::Future;
 use tokio;
@@ -61,7 +62,7 @@ impl Runner {
 
 fn make_client() -> Client {
     let host = get_var("ZCASHRPC_TEST_HOST");
-    let auth = get_var("ZCASHRPC_TEST_AUTH");
+    let auth = encode(get_var("ZCASHRPC_TEST_AUTH"));
     Client::new(host, auth)
 }
 
