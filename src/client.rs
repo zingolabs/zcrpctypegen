@@ -24,16 +24,13 @@ impl Client {
     /// - `authcookie` is the contents of `~/.zcash/.cookie`.
     pub fn new(hostport: String, authcookie: String) -> Client {
         dbg!(&authcookie);
-        let cookie_base64: &str = authcookie
-            .split(":")
-            .collect::<std::vec::Vec<&str>>()
-            .pop()
-            .unwrap();
-        let cookie_bytes: Vec<u8> = base64::decode(&cookie_base64).unwrap();
+        let cookie_rawu8 = authcookie.as_bytes();
+        dbg!(&cookie_rawu8);
+        let cookie_bytes = base64::encode(&authcookie);
         dbg!(&cookie_bytes);
         Client {
             url: format!("http://{}/", hostport),
-            auth: format!("Basic {}", authcookie),
+            auth: format!("Basic {}", &authcookie),
             reqcli: reqwest::Client::new(),
             idit: (0..),
         }
