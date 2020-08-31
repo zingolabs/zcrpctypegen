@@ -23,14 +23,14 @@ impl Client {
     /// - `hostport` is a host/ip with an optional `:PORT` appended.
     /// - `authcookie` is the contents of `~/.zcash/.cookie`.
     pub fn new(hostport: String, authcookie: String) -> Client {
-        dbg!(&authcookie);
+        println!("{:?}", &authcookie);
         let cookie_rawu8 = authcookie.as_bytes();
-        dbg!(&cookie_rawu8);
+        println!("{:?}", &cookie_rawu8);
         let cookie_bytes = base64::encode(&authcookie);
-        dbg!(&cookie_bytes);
+        println!("{:?}", &cookie_bytes);
         Client {
             url: format!("http://{}/", hostport),
-            auth: format!("Basic {}", &authcookie),
+            auth: format!("Basic {}", &cookie_bytes),
             reqcli: reqwest::Client::new(),
             idit: (0..),
         }
