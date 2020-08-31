@@ -25,7 +25,11 @@ impl<'a> From<&'a RequestEnvelope> for reqwest::Body {
 }
 
 impl RequestEnvelope {
-    pub fn wrap(id: u64, method: &'static str, params: Vec<serde_json::Value>) -> RequestEnvelope {
+    pub fn wrap(
+        id: u64,
+        method: &'static str,
+        params: Vec<serde_json::Value>,
+    ) -> RequestEnvelope {
         RequestEnvelope {
             id: id,
             method: method,
@@ -45,7 +49,10 @@ impl ResponseEnvelope {
         json::parse_value(jv)
     }
 
-    fn unwrap_internal(self, clientid: u64) -> ResponseResult<serde_json::Value> {
+    fn unwrap_internal(
+        self,
+        clientid: u64,
+    ) -> ResponseResult<serde_json::Value> {
         use crate::{
             error::JsonRpcViolation::*,
             Error::{JsonRpcViolation, Response},

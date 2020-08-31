@@ -67,7 +67,8 @@ impl Client {
         async move {
             let reqresp = sendfut.await?;
             let text = reqresp.text().await?;
-            let respenv: ResponseEnvelope = json::parse_value(json::parse_string(text)?)?;
+            let respenv: ResponseEnvelope =
+                json::parse_value(json::parse_string(text)?)?;
             let resp = respenv.unwrap(id)?;
             Ok(resp)
         }
