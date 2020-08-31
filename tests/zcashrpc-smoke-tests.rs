@@ -1,4 +1,3 @@
-use base64::encode;
 use std::fmt::Debug;
 use std::fs::File;
 use std::future::Future;
@@ -80,7 +79,7 @@ fn make_client() -> Client {
             .expect("Failed to read cookie");
         cookie_string
     });
-    Client::new(host, encode(auth))
+    Client::new(host, auth)
 }
 
 //fn get_var(name: &str) -> String {
