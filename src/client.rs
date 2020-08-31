@@ -32,7 +32,9 @@ impl Client {
     }
 
     // RPC methods:
-    pub fn getinfo(&mut self) -> impl Future<Output = ResponseResult<GetInfoResponse>> {
+    pub fn getinfo(
+        &mut self,
+    ) -> impl Future<Output = ResponseResult<GetInfoResponse>> {
         rpc_call!(self.getinfo())
     }
 
