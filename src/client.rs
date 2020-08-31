@@ -23,6 +23,14 @@ impl Client {
     /// - `hostport` is a host/ip with an optional `:PORT` appended.
     /// - `authcookie` is the contents of `~/.zcash/.cookie`.
     pub fn new(hostport: String, authcookie: String) -> Client {
+        dbg!(&authcookie);
+        let cookie_base64: &str = authcookie
+            .split(":")
+            .collect::<std::vec::Vec<&str>>()
+            .pop()
+            .unwrap();
+        let cookie_bytes: Vec<u8> = base64::decode(&cookie_base64).unwrap();
+        dbg!(&cookie_bytes);
         Client {
             url: format!("http://{}/", hostport),
             auth: format!("Basic {}", authcookie),
