@@ -1,8 +1,8 @@
-use base64::encode;
+use dirs::home_dir;
 use std::fmt::Debug;
 use std::fs::File;
 use std::future::Future;
-use std::io::Read;
+use std::io::{self, Read};
 use tokio;
 use zcashrpc::Client;
 
@@ -63,29 +63,45 @@ impl Runner {
 }
 
 fn make_client() -> Client {
-    //    let host = get_var("ZCASHRPC_TEST_HOST");
-    //    let auth = encode(get_var("ZCASHRPC_TEST_AUTH"));
     let host = std::env::var("ZCASHRPC_TEST_HOST")
         .unwrap_or(String::from("127.0.0.1:18232".to_string()));
-    let auth = std::env::var("ZCASHRPC__TEST_AUTH").unwrap_or_else(|_| {
-        let cookie_path = match std::env::var("REGTEST") {
-            Ok(_) => "~/.zcash/regtest/.cookie",
-            Err(_) => "~/.zcash/.cookie",
-        };
-        let mut cookie_file = File::open(cookie_path)
-            .expect(&format!("no cookie found in {}", cookie_path));
-        let mut cookie_string = String::new();
-        cookie_file
-            .read_to_string(&mut cookie_string)
-            .expect("Failed to read cookie");
-        cookie_string
-    });
-    Client::new(host, encode(auth))
+    let auth = std::env::var("ZCASHRPC_TEST_AUTH")
+        .or_else(get_cookie)
+        .expect("cookie lookup failed");
+    Client::new(host, auth)
 }
 
-//fn get_var(name: &str) -> String {
-//    std::env::var(name).expect(&format!(
-//        "Environment variable {} must be set to enable smoke tests.",
-//        name
-//    ))
-//}
+fn get_cookie(error: std::env::VarError) -> std::io::Result<String> {
+    let log_msg = format!(
+        "Invalid or no value passed to environment {} {}. {}",
+        "variable ZCASHRPC_TEST_AUTH. Details:",
+        error,
+        "Defaulting to cookie lookup."
+    );
+    dbg!(log_msg);
+    let mut cookie_path = match home_dir() {
+        Some(x) => x,
+        None => {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!(
+                    "{} {} {}",
+                    "Could not find your home directory.",
+                    "Please pass the contents of ~/.zcash/.cookie to the",
+                    "enviroment variable ZCASH_TEST_AUTH."
+                ),
+            ))
+        }
+    };
+
+    cookie_path.push(".zcash");
+    if std::env::var("REGTEST").is_ok() {
+        cookie_path.push("regtest");
+    }
+    cookie_path.push(".cookie");
+
+    let mut cookie_file = File::open(cookie_path)?;
+    let mut cookie_string = String::new();
+    cookie_file.read_to_string(&mut cookie_string)?;
+    Ok(cookie_string)
+}
