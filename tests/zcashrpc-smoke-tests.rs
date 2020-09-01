@@ -1,4 +1,3 @@
-use std::io::Read;
 fn make_client() -> zcashrpc::Client {
     let host = std::env::var("ZCASHRPC_TEST_HOST")
         .unwrap_or(String::from("127.0.0.1:18232".to_string()));
@@ -51,6 +50,7 @@ fn get_cookie(error: std::env::VarError) -> std::io::Result<String> {
 
     let mut cookie_file = std::fs::File::open(cookie_path)?;
     let mut cookie_string = String::new();
+    use std::io::Read as _;
     cookie_file.read_to_string(&mut cookie_string)?;
     Ok(cookie_string)
 }
