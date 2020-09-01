@@ -1,11 +1,4 @@
-use std::fmt::Debug;
-use std::fs::File;
-use std::future::Future;
-use std::io::Read;
-use tokio;
-use zcashrpc::Client;
-
-#[derive(Debug)]
+#[derive(std::fmt::Debug)]
 struct TestsFailed;
 
 #[tokio::test]
@@ -36,9 +29,9 @@ impl Runner {
     async fn run<F, Fut, R, E>(&mut self, name: &str, test: F)
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<R, E>>,
-        R: Debug,
-        E: Debug,
+        Fut: std::future::Future<Output = Result<R, E>>,
+        R: std::fmt::Debug,
+        E: std::fmt::Debug,
     {
         self.tests += 1;
         println!("=== smoke test {}... ", name);
@@ -61,7 +54,7 @@ impl Runner {
     }
 }
 
-fn make_client() -> Client {
+fn make_client() -> zcashrpc::Client {
     let host = std::env::var("ZCASHRPC_TEST_HOST")
         .unwrap_or(String::from("127.0.0.1:18232".to_string()));
     let auth = std::env::var("ZCASHRPC_TEST_AUTH").unwrap_or_else(|_| {
@@ -69,13 +62,14 @@ fn make_client() -> Client {
             Ok(_) => "~/.zcash/regtest/.cookie",
             Err(_) => "~/.zcash/.cookie",
         };
-        let mut cookie_file = File::open(cookie_path)
+        let mut cookie_file = std::fs::File::open(cookie_path)
             .expect(&format!("no cookie found in {}", cookie_path));
         let mut cookie_string = String::new();
+        use std::io::Read;
         cookie_file
             .read_to_string(&mut cookie_string)
             .expect("Failed to read cookie");
         cookie_string
     });
-    Client::new(host, auth)
+    zcashrpc::Client::new(host, auth)
 }
