@@ -4,11 +4,14 @@ struct TestsFailed;
 #[tokio::test]
 async fn main() -> Result<(), TestsFailed> {
     let mut runner = Runner::new();
+    macro_rules! run_rpc_test {
+        ($x:expr, $y:ident) => {
+            runner.run(stringify!($x), || make_client().$y()).await;
+        }
+    }
 
-    runner.run("getinfo", || make_client().getinfo()).await;
-    runner
-        .run("getblockchaininfo", || make_client().getblockchaininfo())
-        .await;
+    run_rpc_test!("getinfo", getinfo);
+    run_rpc_test!("getblockchaininfo", getblockchaininfo);
 
     runner.finish()
 }
