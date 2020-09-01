@@ -62,8 +62,6 @@ impl Runner {
 }
 
 fn make_client() -> Client {
-    //    let host = get_var("ZCASHRPC_TEST_HOST");
-    //    let auth = encode(get_var("ZCASHRPC_TEST_AUTH"));
     let host = std::env::var("ZCASHRPC_TEST_HOST")
         .unwrap_or(String::from("127.0.0.1:18232".to_string()));
     let auth = std::env::var("ZCASHRPC_TEST_AUTH").unwrap_or_else(|_| {
@@ -81,10 +79,3 @@ fn make_client() -> Client {
     });
     Client::new(host, auth)
 }
-
-//fn get_var(name: &str) -> String {
-//    std::env::var(name).expect(&format!(
-//        "Environment variable {} must be set to enable smoke tests.",
-//        name
-//    ))
-//}
