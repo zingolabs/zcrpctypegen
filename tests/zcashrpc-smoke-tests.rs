@@ -6,12 +6,13 @@ async fn main() -> Result<(), TestsFailed> {
     let mut runner = Runner::new();
     macro_rules! run_rpc_test {
         ($x:ident) => {
-            runner.run(stringify!($x), || make_client().$x()).await;
-        }
+            runner.run(stringify!($x), || make_client().$x()).await
+        };
     }
 
     run_rpc_test!(getinfo);
     run_rpc_test!(getblockchaininfo);
+    run_rpc_test!(z_getnewaddress);
 
     runner.finish()
 }

@@ -3,7 +3,9 @@
 mod callrpc;
 pub mod subcomponents;
 
-use self::subcomponents::{GetBlockChainInfoResponse, GetInfoResponse};
+use self::subcomponents::{
+    GetBlockChainInfoResponse, GetInfoResponse, ZGetNewAddressResponse,
+};
 use crate::ResponseResult;
 use reqwest;
 use serde::de::DeserializeOwned;
@@ -36,6 +38,12 @@ impl Client {
         &mut self,
     ) -> impl Future<Output = ResponseResult<GetInfoResponse>> {
         rpc_call!(self.getinfo())
+    }
+
+    pub fn z_getnewaddress(
+        &mut self,
+    ) -> impl Future<Output = ResponseResult<ZGetNewAddressResponse>> {
+        rpc_call!(self.z_getnewaddress())
     }
 
     pub fn getblockchaininfo(
