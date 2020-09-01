@@ -3,6 +3,8 @@
 use crate::ZecAmount;
 use serde::{Deserialize, Serialize};
 
+pub type ZGetNewAddressResponse = String;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetInfoResponse {
     balance: ZecAmount,

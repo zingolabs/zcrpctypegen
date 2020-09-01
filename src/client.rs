@@ -3,7 +3,9 @@
 mod callrpc;
 pub mod subcomponents;
 
-use self::subcomponents::{GetBlockChainInfoResponse, GetInfoResponse};
+use self::subcomponents::{
+    GetBlockChainInfoResponse, GetInfoResponse, ZGetNewAddressResponse,
+};
 use crate::ResponseResult;
 use reqwest;
 use serde::de::DeserializeOwned;
@@ -25,15 +27,23 @@ impl Client {
     pub fn new(hostport: String, authcookie: String) -> Client {
         Client {
             url: format!("http://{}/", hostport),
-            auth: format!("Basic {}", authcookie),
+            auth: format!("Basic {}", base64::encode(authcookie)),
             reqcli: reqwest::Client::new(),
             idit: (0..),
         }
     }
 
     // RPC methods:
-    pub fn getinfo(&mut self) -> impl Future<Output = ResponseResult<GetInfoResponse>> {
+    pub fn getinfo(
+        &mut self,
+    ) -> impl Future<Output = ResponseResult<GetInfoResponse>> {
         rpc_call!(self.getinfo())
+    }
+
+    pub fn z_getnewaddress(
+        &mut self,
+    ) -> impl Future<Output = ResponseResult<ZGetNewAddressResponse>> {
+        rpc_call!(self.z_getnewaddress())
     }
 
     pub fn getblockchaininfo(
@@ -67,7 +77,8 @@ impl Client {
         async move {
             let reqresp = sendfut.await?;
             let text = reqresp.text().await?;
-            let respenv: ResponseEnvelope = json::parse_value(json::parse_string(text)?)?;
+            let respenv: ResponseEnvelope =
+                json::parse_value(json::parse_string(text)?)?;
             let resp = respenv.unwrap(id)?;
             Ok(resp)
         }
