@@ -5,13 +5,13 @@ struct TestsFailed;
 async fn main() -> Result<(), TestsFailed> {
     let mut runner = Runner::new();
     macro_rules! run_rpc_test {
-        ($x:expr, $y:ident) => {
-            runner.run(stringify!($x), || make_client().$y()).await;
+        ($x:ident) => {
+            runner.run(stringify!($x), || make_client().$x()).await;
         }
     }
 
-    run_rpc_test!("getinfo", getinfo);
-    run_rpc_test!("getblockchaininfo", getblockchaininfo);
+    run_rpc_test!(getinfo);
+    run_rpc_test!(getblockchaininfo);
 
     runner.finish()
 }
