@@ -2,6 +2,7 @@
 #[macro_use]
 mod callrpc;
 pub mod subcomponents;
+pub mod utils;
 
 use self::subcomponents::{
     GetBlockChainInfoResponse, GetInfoResponse, ZGetNewAddressResponse,

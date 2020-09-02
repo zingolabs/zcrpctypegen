@@ -14,4 +14,10 @@ serde_json = "*"
 derive_more = "*"
 base64 = "*"
 eyre = "*"
-dirs = "*"
+dirs = { version = "*", optional = true }
+
+[dev-dependencies]
+cfg-if = "0.1.10"
+
+[features]
+cookie-finder = ["dirs"]
