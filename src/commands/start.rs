@@ -1,10 +1,4 @@
-//! `start` subcommand - example of how to write a subcommand
-
-/// App-local prelude includes `app_reader()`/`app_writer()`/`app_config()`
-/// accessors along with logging macros. Customize as you see fit.
-use crate::prelude::*;
-
-use crate::config::ZcashRcliConfig;
+use crate::{application::app_config, config::ZcashRcliConfig};
 use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 
 /// `start` subcommand
