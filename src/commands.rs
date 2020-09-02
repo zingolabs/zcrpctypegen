@@ -10,15 +10,15 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
-mod start;
-mod version;
-
-use self::{start::StartCmd, version::VersionCmd};
 use crate::config::ZcashRcliConfig;
 use abscissa_core::{
     config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
 };
 use std::path::PathBuf;
+
+mod getblockchaininfo;
+mod getinfo;
+mod version;
 
 /// ZcashRcli Configuration Filename
 pub const CONFIG_FILE: &str = "zcash_rcli.toml";
@@ -30,13 +30,17 @@ pub enum ZcashRcliCmd {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// The `start` subcommand
-    #[options(help = "start the application")]
-    Start(StartCmd),
+    /// The `getinfo` subcommand
+    #[options(help = "getinfo rpc call", name = "getinfo")]
+    GetInfo(getinfo::GetInfoCmd),
+
+    /// The getblockchaininfo subcommand
+    #[options(help = "getblockchaininfo rpc call", name = "getblockchaininfo")]
+    GetBlockchainInfo(getblockchaininfo::GetBlockchainInfoCmd),
 
     /// The `version` subcommand
     #[options(help = "display version information")]
-    Version(VersionCmd),
+    Version(version::VersionCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.
@@ -60,12 +64,9 @@ impl Configurable<ZcashRcliConfig> for ZcashRcliCmd {
     ///
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
-    fn process_config(
-        &self,
-        config: ZcashRcliConfig,
-    ) -> Result<ZcashRcliConfig, FrameworkError> {
+    fn process_config(&self, config: ZcashRcliConfig) -> Result<ZcashRcliConfig, FrameworkError> {
         match self {
-            ZcashRcliCmd::Start(cmd) => cmd.override_config(config),
+            ZcashRcliCmd::GetInfo(cmd) => cmd.override_config(config),
             _ => Ok(config),
         }
     }
