@@ -8,7 +8,7 @@ edition = "2018"
 gumdrop = "0.7"
 serde = { version = "1", features = ["serde_derive"] }
 thiserror = "1"
-zcashrpc = { path = "../../zcashrpc", features = ["cookie-finder"] }
+zcashrpc = { git = "https://github.com/zingolabs/zcashrpc.git", features = ["cookie-finder"] }
 tokio = "0.2.22"
 abscissa_tokio = "0.5.1"
 
