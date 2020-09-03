@@ -23,7 +23,7 @@ fn get_cookie_with_env_var_err(
     error: std::env::VarError,
 ) -> std::io::Result<String> {
     let log_msg = format!(
-        "Invalid or no value passed to environment {} {}. {}",
+        "Invalid or no value passed to environment {} '{}'. {}",
         "variable ZCASHRPC_TEST_AUTH. Details:",
         error,
         "Defaulting to cookie lookup."
@@ -32,7 +32,9 @@ fn get_cookie_with_env_var_err(
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "cookie-finder")] {
-            zcashrpc::client::utils::get_cookie()
+            zcashrpc::client::utils::get_cookie(
+                std::env::var("REGTEST").is_ok()
+            )
         } else {
             let log_msg = format!(
                 "For automatic authentication, run with flag {}",

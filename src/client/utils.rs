@@ -1,5 +1,5 @@
 #[cfg(feature = "cookie-finder")]
-pub fn get_cookie() -> std::io::Result<String> {
+pub fn get_cookie(regtest: bool) -> std::io::Result<String> {
     let mut cookie_path = match dirs::home_dir() {
         Some(x) => x,
         None => {
@@ -16,7 +16,7 @@ pub fn get_cookie() -> std::io::Result<String> {
     };
 
     cookie_path.push(".zcash");
-    if std::env::var("REGTEST").is_ok() {
+    if regtest {
         cookie_path.push("regtest");
     }
     cookie_path.push(".cookie");
