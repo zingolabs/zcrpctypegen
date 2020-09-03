@@ -43,6 +43,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "abscissa_tokio"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50b7d1a5aa670b07be20e9457b491e78022d8421d4a39939f8b01a6a16ea85dc"
+dependencies = [
+ "abscissa_core",
+ "tokio",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1674,17 +1684,18 @@ name = "zcash_rcli"
 version = "0.1.0"
 dependencies = [
  "abscissa_core",
+ "abscissa_tokio",
  "gumdrop",
  "once_cell",
  "serde",
  "thiserror",
+ "tokio",
  "zcashrpc",
 ]
 
 [[package]]
 name = "zcashrpc"
 version = "0.1.0"
-source = "git+https://github.com/zingolabs/zcashrpc#ed0cfd59999f2248eb67085d083bcc5786868a90"
 dependencies = [
  "base64",
  "derive_more",

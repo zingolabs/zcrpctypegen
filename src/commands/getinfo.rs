@@ -1,4 +1,5 @@
 use abscissa_core::{Command, FrameworkError, Options, Runnable};
+use zcashrpc::client::utils;
 
 /// The `Options` proc macro generates an option parser based on the struct
 /// definition, and is defined in the `gumdrop` crate. See their documentation
@@ -15,8 +16,14 @@ pub struct GetInfoCmd {
 impl Runnable for GetInfoCmd {
     /// Start the application.
     fn run(&self) {
-        let config = crate::application::app_config();
-        println!("Hello, {}!", &config.hello.recipient);
+        abscissa_tokio::run(&crate::application::APPLICATION, async {
+            let response = zcashrpc::Client::new(
+                utils::get_zcashd_port(),
+                utils::get_cookie(true).unwrap(),
+            )
+            .getinfo();
+            println!("{:?}", response.await);
+        });
     }
 }
 

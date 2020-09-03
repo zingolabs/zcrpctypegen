@@ -81,8 +81,12 @@ impl Application for ZcashRcliApp {
     /// If you would like to add additional components to your application
     /// beyond the default ones provided by the framework, this is the place
     /// to do so.
-    fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
-        let components = self.framework_components(command)?;
+    fn register_components(
+        &mut self,
+        command: &Self::Cmd,
+    ) -> Result<(), FrameworkError> {
+        let mut components = self.framework_components(command)?;
+        components.push(Box::new(abscissa_tokio::TokioComponent::new()?));
         self.state.components.register(components)
     }
 
@@ -91,7 +95,10 @@ impl Application for ZcashRcliApp {
     /// Called regardless of whether config is loaded to indicate this is the
     /// time in app lifecycle when configuration would be loaded if
     /// possible.
-    fn after_config(&mut self, config: Self::Cfg) -> Result<(), FrameworkError> {
+    fn after_config(
+        &mut self,
+        config: Self::Cfg,
+    ) -> Result<(), FrameworkError> {
         // Configure components
         self.state.components.after_config(&config)?;
         self.config = Some(config);
@@ -99,7 +106,10 @@ impl Application for ZcashRcliApp {
     }
 
     /// Get tracing configuration from command-line options
-    fn tracing_config(&self, command: &EntryPoint<ZcashRcliCmd>) -> trace::Config {
+    fn tracing_config(
+        &self,
+        command: &EntryPoint<ZcashRcliCmd>,
+    ) -> trace::Config {
         if command.verbose {
             trace::Config::verbose()
         } else {
