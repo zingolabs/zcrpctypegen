@@ -2,8 +2,6 @@ use abscissa_core::Command;
 #[derive(Command, Debug, abscissa_core::Options)]
 pub struct GetBlockchainInfoCmd {}
 
-impl abscissa_core::Runnable for GetBlockchainInfoCmd {
-    fn run(&self) {
-        println!("Placeholder lol")
-    }
-}
+use crate::zero_arg_run_impl;
+
+zero_arg_run_impl!(GetBlockchainInfoCmd, getblockchaininfo);

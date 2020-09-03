@@ -12,7 +12,8 @@
 
 use crate::config::ZcashRcliConfig;
 use abscissa_core::{
-    config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
+    config::Override, Command, Configurable, FrameworkError, Help, Options,
+    Runnable,
 };
 use std::path::PathBuf;
 
@@ -43,6 +44,31 @@ pub enum ZcashRcliCmd {
     Version(version::VersionCmd),
 }
 
+fn make_client(regtest: bool) -> zcashrpc::Client {
+    use zcashrpc::client::utils;
+    zcashrpc::Client::new(
+        utils::get_zcashd_port(),
+        utils::get_cookie(regtest).unwrap(),
+    )
+}
+
+/// A simple Runnable implementation for commands that simply make an
+/// rpc call that doesn't take any arguments
+#[macro_export]
+macro_rules! zero_arg_run_impl {
+    ( $($command:ident, $rpc_call:ident)+) => {
+        $(impl abscissa_core::Runnable for $command {
+            fn run(&self) {
+                abscissa_tokio::run(&$crate::application::APPLICATION, async {
+                    let response =
+                        $crate::commands::make_client(true).$rpc_call();
+                    println!("{:?}", response.await);
+                }).unwrap();
+            }
+        })+
+    };
+}
+
 /// This trait allows you to define how application configuration is loaded.
 impl Configurable<ZcashRcliConfig> for ZcashRcliCmd {
     /// Location of the configuration file
@@ -64,7 +90,10 @@ impl Configurable<ZcashRcliConfig> for ZcashRcliCmd {
     ///
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
-    fn process_config(&self, config: ZcashRcliConfig) -> Result<ZcashRcliConfig, FrameworkError> {
+    fn process_config(
+        &self,
+        config: ZcashRcliConfig,
+    ) -> Result<ZcashRcliConfig, FrameworkError> {
         match self {
             ZcashRcliCmd::GetInfo(cmd) => cmd.override_config(config),
             _ => Ok(config),
