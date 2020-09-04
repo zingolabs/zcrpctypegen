@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["noone <noone@nowhere.net>", "Za <zancas@zingolabs.com>", "Gy <gygaxis@zingolabs.com>"]
 edition = "2018"
 
+[workspace]
+members = ["zcash_rcli"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
