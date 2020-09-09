@@ -32,8 +32,7 @@ fn get_cookie_with_env_var_err(
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "cookie-finder")] {
-            zcashrpc::client::utils::get_cookie(
-                std::env::var("REGTEST").is_ok()
+            zcashrpc::client::utils::get_cookie(true
             )
         } else {
             let log_msg = format!(
