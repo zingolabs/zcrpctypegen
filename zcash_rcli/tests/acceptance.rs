@@ -19,8 +19,8 @@
 )]
 
 use abscissa_core::testing::prelude::*;
-use zcash_rcli::config::ZcashRcliConfig;
 use once_cell::sync::Lazy;
+//use zcash_rcli::config::ZcashRcliConfig;
 
 /// Executes your application binary via `cargo run`.
 ///
@@ -32,53 +32,23 @@ pub static RUNNER: Lazy<CmdRunner> = Lazy::new(|| CmdRunner::default());
 
 /// Use `ZcashRcliConfig::default()` value if no config or args
 #[test]
-fn start_no_args() {
+fn get_info() {
     let mut runner = RUNNER.clone();
-    let mut cmd = runner.arg("start").capture_stdout().run();
-    cmd.stdout().expect_line("Hello, world!");
+    let mut cmd = runner.arg("getinfo").capture_stdout().run();
+
+    cmd.stdout().expect_line("Help flag: false");
+    cmd.stdout().expect_regex(r"Ok\(GetInfoResponse \{*.");
     cmd.wait().unwrap().expect_success();
 }
 
 /// Use command-line argument value
 #[test]
-fn start_with_args() {
+fn get_info_with_help() {
     let mut runner = RUNNER.clone();
-    let mut cmd = runner
-        .args(&["start", "acceptance", "test"])
-        .capture_stdout()
-        .run();
+    let mut cmd = runner.args(&["getinfo", "-h"]).capture_stdout().run();
 
-    cmd.stdout().expect_line("Hello, acceptance test!");
-    cmd.wait().unwrap().expect_success();
-}
-
-/// Use configured value
-#[test]
-fn start_with_config_no_args() {
-    let mut config = ZcashRcliConfig::default();
-    config.hello.recipient = "configured recipient".to_owned();
-    let expected_line = format!("Hello, {}!", &config.hello.recipient);
-
-    let mut runner = RUNNER.clone();
-    let mut cmd = runner.config(&config).arg("start").capture_stdout().run();
-    cmd.stdout().expect_line(&expected_line);
-    cmd.wait().unwrap().expect_success();
-}
-
-/// Override configured value with command-line argument
-#[test]
-fn start_with_config_and_args() {
-    let mut config = ZcashRcliConfig::default();
-    config.hello.recipient = "configured recipient".to_owned();
-
-    let mut runner = RUNNER.clone();
-    let mut cmd = runner
-        .config(&config)
-        .args(&["start", "acceptance", "test"])
-        .capture_stdout()
-        .run();
-
-    cmd.stdout().expect_line("Hello, acceptance test!");
+    cmd.stdout().expect_line("Help flag: true");
+    cmd.stdout().expect_regex(r"Ok\(GetInfoResponse \{*.");
     cmd.wait().unwrap().expect_success();
 }
 

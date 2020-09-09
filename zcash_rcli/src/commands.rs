@@ -54,7 +54,8 @@ fn make_client(regtest: bool) -> zcashrpc::Client {
 /// rpc call which takes no arguments
 macro_rules! zero_arg_run_impl {
     ( $($command:ident, $rpc_call:ident),+) => {
-        $(#[derive(Command, Debug, abscissa_core::Options)]
+        $(///The $rpc_call rpc call
+        #[derive(Command, Debug, abscissa_core::Options)]
         pub struct $command {
             #[options(help = "command-specific help")]
             help: bool,
