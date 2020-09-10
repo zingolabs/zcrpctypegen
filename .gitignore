@@ -1,2 +1,4 @@
-target/
 Cargo.lock
+zcash_rcli/Cargo.lock
+/target
+**/*.rs.bk
