@@ -20,7 +20,6 @@
 
 use abscissa_core::testing::prelude::*;
 use once_cell::sync::Lazy;
-//use zcash_rcli::config::ZcashRcliConfig;
 
 /// Executes your application binary via `cargo run`.
 ///
