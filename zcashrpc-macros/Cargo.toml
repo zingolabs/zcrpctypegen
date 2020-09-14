@@ -1,0 +1,10 @@
+[package]
+name = "zcashrpc-macros"
+version = "0.1.0"
+authors = ["Gygaxis Vainhardt <gygaxis@zingolabs.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]

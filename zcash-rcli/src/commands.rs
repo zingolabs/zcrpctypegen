@@ -17,7 +17,7 @@ use std::path::PathBuf;
 mod version;
 
 /// ZcashRcli Configuration Filename
-pub const CONFIG_FILE: &str = "zcash_rcli.toml";
+pub const CONFIG_FILE: &str = "zcash-rcli.toml";
 
 /// ZcashRcli Subcommands
 #[derive(Command, Debug, Options, Runnable)]
