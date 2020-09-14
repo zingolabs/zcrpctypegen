@@ -6,18 +6,6 @@ fn make_client() -> zcashrpc::Client {
         .expect("cookie lookup failed");
     zcashrpc::Client::new(host, auth)
 }
-macro_rules! run_smoketest {
-    ($x:ident) => {
-        #[tokio::test]
-        async fn $x() {
-            let _res = make_client().$x().await.unwrap();
-        }
-    };
-}
-
-run_smoketest!(getinfo);
-run_smoketest!(getblockchaininfo);
-run_smoketest!(z_getnewaddress);
 
 fn get_cookie_with_env_var_err(
     error: std::env::VarError,
@@ -32,8 +20,7 @@ fn get_cookie_with_env_var_err(
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "cookie-finder")] {
-            zcashrpc::client::utils::get_cookie(true
-            )
+            zcashrpc::client::utils::get_cookie(true)
         } else {
             let log_msg = format!(
                 "For automatic authentication, run with flag {}",
@@ -43,3 +30,16 @@ fn get_cookie_with_env_var_err(
         }
     }
 }
+
+macro_rules! run_smoketest {
+    ($x:ident) => {
+        #[tokio::test]
+        async fn $x() {
+            let _res = make_client().$x().await.unwrap();
+        }
+    };
+}
+
+run_smoketest!(getinfo);
+run_smoketest!(getblockchaininfo);
+run_smoketest!(z_getnewaddress);
