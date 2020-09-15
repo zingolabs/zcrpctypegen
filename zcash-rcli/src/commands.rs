@@ -30,6 +30,12 @@ pub enum ZcashRcliCmd {
     #[options(help = "getinfo rpc call, no arguments.", name = "getinfo")]
     GetInfo(GetInfoCmd),
 
+    /// The 'generate' regtest command
+    #[options(
+        help = "generate rpc call. generate x (number of blocks to generate"
+    )]
+    Generate(GenerateCmd),
+
     /// The getblockchaininfo subcommand
     #[options(
         help = "getblockchaininfo rpc call, no arguments",
@@ -43,12 +49,18 @@ pub enum ZcashRcliCmd {
 }
 
 /// A simple Definition and Runnable implementation for commands that make an
-/// rpc call which takes no arguments
-macro_rules! zero_arg_run_impl {
-    ( $($command:ident, $rpc_call:ident),+) => {
+/// rpc call
+macro_rules! run_impl {
+    ( $($command:ident $rpc_call:ident $([$($arg:ident $of:ty)+])? ),+) => {
         $(///The $rpc_call rpc call
         #[derive(Command, Debug, abscissa_core::Options)]
         pub struct $command {
+            $($(
+                #[options(free)]
+                $arg: $of,
+            )+)?
+
+
             #[options(help = "command-specific help")]
             help: bool,
         }
@@ -65,11 +77,10 @@ macro_rules! zero_arg_run_impl {
     };
 }
 
-zero_arg_run_impl!(
-    GetInfoCmd,
-    getinfo,
-    GetBlockchainInfoCmd,
-    getblockchaininfo
+run_impl!(
+    GetInfoCmd getinfo,
+    GetBlockchainInfoCmd getblockchaininfo,
+    GenerateCmd generate [how_many u32]
 );
 
 /// This trait allows you to define how application configuration is loaded.
