@@ -2,3 +2,4 @@ Cargo.lock
 zcash_rcli/Cargo.lock
 /target
 **/*.rs.bk
+temp_json_data.json
