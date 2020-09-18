@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut id = 0..;
     let client = reqwest::Client::new();
 
-    //temporary POC, this will hopefully be replaced by a config-file in the
+    //temporary POC, this will likely be replaced by a config-file in the
     //short-term, and hopefully eventually a query against zcashd itself
     let rpc_response_names =
         vec!["GetInfoResponse", "GetBlockChainInfoResponse"];

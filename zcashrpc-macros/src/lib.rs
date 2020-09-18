@@ -9,6 +9,6 @@ pub fn declare_rpc_client_methods(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn create_rpc_response_str_literals(_input: TokenStream) -> TokenStream {
-    responses::create_rpc_response_str_literals().into()
+pub fn declare_rpc_response_types(_input: TokenStream) -> TokenStream {
+    responses::declare_rpc_response_types().into()
 }

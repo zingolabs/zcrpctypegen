@@ -9,7 +9,6 @@ use self::subcomponents::{
     ZGetNewAddressResponse,
 };
 use crate::ResponseResult;
-use reqwest;
 use serde::de::DeserializeOwned;
 use std::future::Future;
 use std::ops::RangeFrom;

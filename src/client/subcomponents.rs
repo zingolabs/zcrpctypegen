@@ -13,4 +13,4 @@ pub type ZGetNewAddressResponse = String;
 //in build script
 pub type GenerateResponse = Vec<String>;
 
-zcashrpc_macros::create_rpc_response_str_literals!();
+zcashrpc_macros::declare_rpc_response_types!();
