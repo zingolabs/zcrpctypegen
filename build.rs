@@ -25,8 +25,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     //temporary POC, this will likely be replaced by a config-file in the
     //short-term, and hopefully eventually a query against zcashd itself
-    let rpc_response_names =
-        vec!["GetInfoResponse", "GetBlockChainInfoResponse"];
+    let rpc_response_names: Vec<(&'static str, Vec<serde_json::Value>)> = vec![
+        ("GetInfoResponse", Vec::new()),
+        ("GetBlockChainInfoResponse", Vec::new()),
+        ("GenerateResponse", vec![2.into()]),
+        ("ZGetNewAddressResponse", Vec::new()),
+    ];
 
     //This assignment prevents the compiler from complaining if the file
     //already exists. If the file already exists, this is correctly a noop,
@@ -45,8 +49,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .body(&RequestEnvelope {
                 id: id.next().unwrap(),
-                method: &get_call_name(response_name),
-                params: Vec::new(),
+                method: &get_call_name(response_name.0),
+                params: response_name.1,
             })
             .send();
         let text = response.await?.text().await?;
@@ -54,8 +58,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let result = json.as_object().unwrap().get("result").unwrap();
 
         use std::io::Write as _;
-        let mut data_file =
-            std::fs::File::create(format!("json_data/{}.json", response_name))?;
+        let mut data_file = std::fs::File::create(format!(
+            "json_data/{}.json",
+            response_name.0
+        ))?;
         data_file.write(serde_json::to_string_pretty(result)?.as_bytes())?;
     }
     Ok(())
@@ -65,11 +71,12 @@ fn get_call_name(response_name: &str) -> &'static str {
     //We need to leak in order to get a &'static str at runtime, which is
     //needed by our RequestEnvelope. It's possible we can rewrite it to not
     //need a 'static, but that's a problem for future us.
-    Box::leak(
-        response_name
-            .strip_suffix("Response")
-            .unwrap()
-            .to_lowercase()
-            .into_boxed_str(),
-    )
+    let mut call_name = response_name
+        .strip_suffix("Response")
+        .unwrap()
+        .to_lowercase();
+    if call_name.starts_with('z') {
+        call_name.insert(1, '_');
+    }
+    Box::leak(call_name.into_boxed_str())
 }
