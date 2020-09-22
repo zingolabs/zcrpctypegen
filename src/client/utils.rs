@@ -34,6 +34,7 @@ pub fn get_zcashd_port() -> String {
     String::from("127.0.0.1:18232")
 }
 
+#[cfg(any(crate::Client))]
 pub fn make_client(regtest: bool) -> crate::Client {
     crate::Client::new(get_zcashd_port(), get_cookie(regtest).unwrap())
 }

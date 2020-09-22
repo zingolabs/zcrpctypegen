@@ -48,39 +48,10 @@ pub enum ZcashRcliCmd {
     Version(version::VersionCmd),
 }
 
-/// A simple Definition and Runnable implementation for commands that make an
-/// rpc call
-macro_rules! run_impl {
-    ( $($command:ident $rpc_call:ident $([$($arg:ident $of:ty)+])? ),+) => {
-        $(///The $rpc_call rpc call
-        #[derive(Command, Debug, abscissa_core::Options)]
-        pub struct $command {
-            $($(
-                #[options(free)]
-                $arg: $of,
-            )+)?
-
-
-            #[options(help = "command-specific help")]
-            help: bool,
-        }
-        impl Runnable for $command {
-            fn run(&self) {
-                abscissa_tokio::run(&$crate::application::APPLICATION, async {
-                    let response =
-                        zcashrpc::client::utils::make_client(true).$rpc_call();
-                    println!("Help flag: {:?}", self.help);
-                    println!("{:?}", response.await);
-                }).unwrap();
-            }
-        })+
-    };
-}
-
-run_impl!(
-    GetInfoCmd getinfo,
-    GetBlockchainInfoCmd getblockchaininfo,
-    GenerateCmd generate [how_many u32]
+zcashrpc_macros::declare_rcli_command_types!(
+    GetInfo,
+    GetBlockchainInfo,
+    Generate(how_many: u32),
 );
 
 /// This trait allows you to define how application configuration is loaded.
