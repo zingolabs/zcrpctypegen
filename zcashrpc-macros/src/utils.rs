@@ -77,7 +77,7 @@ pub fn format_input(
     suffix: &str,
     input: (proc_macro2::Ident, proc_macro2::Group),
 ) -> (SnakeCase, CamelCaseStruct, TypedArgs, UntypedArgs) {
-    let (ident, typed_args) = input;
+    let (ident, params) = input;
     let mut call_ident_string = ident.to_string().to_lowercase();
     if call_ident_string.starts_with('z') {
         call_ident_string.insert(1, '_');
@@ -87,16 +87,8 @@ pub fn format_input(
         &format!("{}{}", ident.to_string(), suffix),
         ident.span(),
     );
-    let typed_arg_stream = typed_args.stream();
-    let untyped_arg_stream: proc_macro2::TokenStream = strip_types(
-        typed_args.stream().into_iter(),
-        Vec::new(),
-        NextIdent::Arg,
-    );
-    (
-        call_ident,
-        response_ident,
-        typed_arg_stream,
-        untyped_arg_stream,
-    )
+    let param_stream = params.stream();
+    let arg_id_stream: proc_macro2::TokenStream =
+        strip_types(params.stream().into_iter(), Vec::new(), NextIdent::Arg);
+    (call_ident, response_ident, param_stream, arg_id_stream)
 }

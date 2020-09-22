@@ -1,11 +1,11 @@
 pub fn make_command(
     input: (proc_macro2::Ident, proc_macro2::Group),
 ) -> proc_macro2::TokenStream {
-    let (call_ident, command_ident, typed_arg_stream, untyped_arg_stream) =
+    let (call_ident, command_ident, param_stream, arg_id_stream) =
         crate::utils::format_input("Cmd", input);
-    let typed_arg_vec: proc_macro2::TokenStream =
-        if !typed_arg_stream.is_empty() {
-            group_up(typed_arg_stream)
+    let formatted_param_vec: proc_macro2::TokenStream =
+        if !param_stream.is_empty() {
+            group_up(param_stream)
                 .into_iter()
                 .map(|ts| {
                     quote::quote!(
@@ -15,16 +15,16 @@ pub fn make_command(
                 })
                 .collect()
         } else {
-            typed_arg_stream
+            param_stream
         };
-    let untyped_arg_vec: Vec<proc_macro2::TokenStream> =
-        untyped_arg_stream.into_iter().map(|tt| tt.into()).collect();
+    let arg_id_vec: Vec<proc_macro2::TokenStream> =
+        arg_id_stream.into_iter().map(|tt| tt.into()).collect();
     quote::quote!(
         ///Macro-generated rpc method
         #[derive(Command, Debug, abscissa_core::Options)]
         pub struct #command_ident {
 
-            #typed_arg_vec
+            #formatted_param_vec
 
             #[options(help = "command-specific help")]
             help: bool,
@@ -35,7 +35,7 @@ pub fn make_command(
                 abscissa_tokio::run(&crate::application::APPLICATION, async {
                     let response =
                         zcashrpc::client::utils::make_client(true).#call_ident(
-                            #(self.#untyped_arg_vec),*
+                            #(self.#arg_id_vec),*
                         );
                     println!("Help flag: {:?}", self.help);
                     println!("{:?}", response.await);
