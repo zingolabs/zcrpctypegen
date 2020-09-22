@@ -1,41 +1,13 @@
+pub use crate::client::utils::RequestEnvelope;
 use crate::{error::ResponseError, ResponseResult};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct RequestEnvelope {
-    id: u64,
-    method: &'static str,
-    params: Vec<serde_json::Value>,
-}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ResponseEnvelope {
     id: u64,
     result: Option<serde_json::Value>,
     error: Option<ResponseError>,
-}
-
-impl<'a> From<&'a RequestEnvelope> for reqwest::Body {
-    fn from(re: &'a RequestEnvelope) -> reqwest::Body {
-        use serde_json::to_string_pretty;
-
-        reqwest::Body::from(to_string_pretty(re).unwrap())
-    }
-}
-
-impl RequestEnvelope {
-    pub fn wrap(
-        id: u64,
-        method: &'static str,
-        params: Vec<serde_json::Value>,
-    ) -> RequestEnvelope {
-        RequestEnvelope {
-            id: id,
-            method: method,
-            params: params,
-        }
-    }
 }
 
 impl ResponseEnvelope {

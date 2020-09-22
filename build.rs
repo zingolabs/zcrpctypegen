@@ -1,28 +1,8 @@
 #[path = "src/client/utils.rs"]
 mod utils;
 
-//Copied from envelope.rs to not get more types and deps than we need
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct RequestEnvelope {
-    id: u64,
-    method: &'static str,
-    params: Vec<serde_json::Value>,
-}
-
-//Copied from envelope.rs to not get more types and deps than we need
-impl<'a> From<&'a RequestEnvelope> for reqwest::Body {
-    fn from(re: &'a RequestEnvelope) -> reqwest::Body {
-        use serde_json::to_string_pretty;
-
-        reqwest::Body::from(to_string_pretty(re).unwrap())
-    }
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut id = 0..;
-    let client = reqwest::Client::new();
-
     //temporary POC, this will likely be replaced by a config-file in the
     //short-term, and hopefully eventually a query against zcashd itself
     let rpc_response_names: Vec<(&'static str, Vec<serde_json::Value>)> = vec![
@@ -37,22 +17,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //and not an error we need to be informed of.
     let _json_dir = std::fs::DirBuilder::new().create("json_data");
     for response_name in rpc_response_names {
-        //Logic mostly copied from client.rs, as we don't want to inherit deps
-        let response = client
-            .post(&format!("http://{}/", crate::utils::get_zcashd_port()))
-            .header(
-                "Authorization",
-                format!(
-                    "Basic {}",
-                    base64::encode(&crate::utils::get_cookie(true)?)
-                ),
-            )
-            .body(&RequestEnvelope {
-                id: id.next().unwrap(),
-                method: &get_call_name(response_name.0),
-                params: response_name.1,
-            })
-            .send();
+        let (_, response) = utils::InnerCli::new(
+            utils::get_zcashd_port(),
+            utils::get_cookie(true)?,
+        )
+        .procedure_call(get_call_name(response_name.0), response_name.1);
         let text = response.await?.text().await?;
         let json: serde_json::Value = serde_json::de::from_str(&text).unwrap();
         let result = json.as_object().unwrap().get("result").unwrap();
