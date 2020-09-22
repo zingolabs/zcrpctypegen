@@ -33,3 +33,7 @@ pub fn get_zcashd_port() -> String {
     //automatic port lookup
     String::from("127.0.0.1:18232")
 }
+
+pub fn make_client(regtest: bool) -> crate::Client {
+    crate::Client::new(get_zcashd_port(), get_cookie(regtest).unwrap())
+}
