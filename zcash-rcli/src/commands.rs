@@ -42,14 +42,6 @@ pub enum ZcashRcliCmd {
     Version(version::VersionCmd),
 }
 
-fn make_client(regtest: bool) -> zcashrpc::Client {
-    use zcashrpc::client::utils;
-    zcashrpc::Client::new(
-        utils::get_zcashd_port(),
-        utils::get_cookie(regtest).unwrap(),
-    )
-}
-
 /// A simple Definition and Runnable implementation for commands that make an
 /// rpc call which takes no arguments
 macro_rules! zero_arg_run_impl {
@@ -64,7 +56,7 @@ macro_rules! zero_arg_run_impl {
             fn run(&self) {
                 abscissa_tokio::run(&$crate::application::APPLICATION, async {
                     let response =
-                        $crate::commands::make_client(true).$rpc_call();
+                        zcashrpc::client::utils::make_client(true).$rpc_call();
                     println!("Help flag: {:?}", self.help);
                     println!("{:?}", response.await);
                 }).unwrap();
