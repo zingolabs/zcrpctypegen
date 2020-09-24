@@ -11,6 +11,7 @@ thiserror = "1"
 zcashrpc = { path = "../" }
 tokio = "0.2.22"
 abscissa_tokio = "0.5.1"
+zcashrpc-macros = { path = "../zcashrpc-macros" }
 
 [dependencies.abscissa_core]
 version = "0.5.2"
