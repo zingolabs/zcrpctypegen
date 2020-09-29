@@ -1,49 +1,51 @@
 //! Sub-components of response messages.
 
 use crate::ZecAmount;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetInfoResponse {
     balance: ZecAmount,
-    blocks: u64,
-    connections: u64,
-    difficulty: f64,
+    blocks: Decimal,
+    connections: Decimal,
+    difficulty: Decimal,
     errors: String,
-    keypoololdest: u64,
-    keypoolsize: u64,
+    keypoololdest: Decimal,
+    keypoolsize: Decimal,
     paytxfee: ZecAmount,
-    protocolversion: u64,
+    protocolversion: Decimal,
     proxy: String,
     relayfee: ZecAmount,
     testnet: bool,
-    timeoffset: u64,
-    version: u64,
-    walletversion: u64,
+    timeoffset: Decimal,
+    version: Decimal,
+    walletversion: Decimal,
 }
 
 pub mod getblockchaininfo {
     use crate::ZecAmount;
+    use rust_decimal::Decimal;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct GetBlockChainInfoResponse {
         chain: String,
-        blocks: u64,
-        headers: u64,
+        blocks: Decimal,
+        headers: Decimal,
         bestblockhash: String,
-        difficulty: f64,
-        verificationprogress: f64,
+        difficulty: Decimal,
+        verificationprogress: Decimal,
         chainwork: String,
         pruned: bool,
-        size_on_disk: u64,
-        commitments: u64,
+        size_on_disk: Decimal,
+        commitments: Decimal,
         #[serde(rename = "valuePools")]
         value_pools: Vec<ValuePool>,
         softforks: Vec<Softfork>,
         upgrades: std::collections::HashMap<String, NetworkUpgradeDesc>,
         consensus: Consensus,
-        pruneheight: Option<u64>,
+        pruneheight: Option<Decimal>,
         #[serde(rename = "fullyNotified")]
         fully_notified: Option<bool>,
     }
@@ -55,17 +57,17 @@ pub mod getblockchaininfo {
         #[serde(rename = "chainValue")]
         pub chain_value: Option<ZecAmount>,
         #[serde(rename = "chainValueZat")]
-        pub chain_value_zat: Option<u64>,
+        pub chain_value_zat: Option<Decimal>,
         #[serde(rename = "valueDelta")]
         pub value_delta: Option<ZecAmount>,
         #[serde(rename = "valueDeltaZat")]
-        pub value_delta_zat: Option<i64>,
+        pub value_delta_zat: Option<Decimal>,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct Softfork {
         pub id: String,
-        pub version: i64,
+        pub version: Decimal,
         pub enforce: SoftforkMajorityDesc,
         pub reject: SoftforkMajorityDesc,
     }
@@ -73,15 +75,15 @@ pub mod getblockchaininfo {
     #[derive(Debug, Deserialize, Serialize)]
     pub struct SoftforkMajorityDesc {
         pub status: bool,
-        pub found: i64,
-        pub required: i64,
+        pub found: Decimal,
+        pub required: Decimal,
         pub window: serde_json::Value, // FIXME
     }
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct NetworkUpgradeDesc {
         pub name: String,
-        pub activationheight: u64,
+        pub activationheight: Decimal,
         pub status: String, // FIXME: enum-ify
         pub info: String,
     }
