@@ -41,4 +41,3 @@ cookie-finder = ["dirs"]
 
 [[test]]
 name = "zcashrpc-smoke-tests"
-doc = true
