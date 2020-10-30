@@ -10,7 +10,6 @@ struct TestsFailed;
 async fn main() -> Result<(), TestsFailed> {
     let mut runner = Runner::new();
 
-    runner.run("getinfo", || make_client().getinfo()).await;
     runner
         .run("getblockchaininfo", || make_client().getblockchaininfo())
         .await;

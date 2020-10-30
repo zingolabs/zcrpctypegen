@@ -3,7 +3,7 @@
 mod callrpc;
 pub mod subcomponents;
 
-use self::subcomponents::{GetBlockChainInfoResponse, GetInfoResponse};
+use self::subcomponents::GetBlockChainInfoResponse;
 use crate::ResponseResult;
 use reqwest;
 use serde::de::DeserializeOwned;
@@ -32,10 +32,6 @@ impl Client {
     }
 
     // RPC methods:
-    pub fn getinfo(&mut self) -> impl Future<Output = ResponseResult<GetInfoResponse>> {
-        rpc_call!(self.getinfo())
-    }
-
     pub fn getblockchaininfo(
         &mut self,
     ) -> impl Future<Output = ResponseResult<GetBlockChainInfoResponse>> {

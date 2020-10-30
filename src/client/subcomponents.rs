@@ -1,51 +1,29 @@
 //! Sub-components of response messages.
 
-use crate::ZecAmount;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GetInfoResponse {
-    balance: ZecAmount,
-    blocks: u64,
-    connections: u64,
-    difficulty: f64,
-    errors: String,
-    keypoololdest: u64,
-    keypoolsize: u64,
-    paytxfee: ZecAmount,
-    protocolversion: u64,
-    proxy: String,
-    relayfee: ZecAmount,
-    testnet: bool,
-    timeoffset: u64,
-    version: u64,
-    walletversion: u64,
-}
-
 pub mod getblockchaininfo {
     use crate::ZecAmount;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct GetBlockChainInfoResponse {
-        chain: String,
-        blocks: u64,
-        headers: u64,
-        bestblockhash: String,
-        difficulty: f64,
-        verificationprogress: f64,
-        chainwork: String,
-        pruned: bool,
-        size_on_disk: u64,
-        commitments: u64,
+        pub chain: String,
+        pub blocks: u64,
+        pub headers: u64,
+        pub bestblockhash: String,
+        pub difficulty: f64,
+        pub verificationprogress: f64,
+        pub chainwork: String,
+        pub pruned: bool,
+        pub size_on_disk: u64,
+        pub commitments: u64,
         #[serde(rename = "valuePools")]
-        value_pools: Vec<ValuePool>,
-        softforks: Vec<Softfork>,
-        upgrades: std::collections::HashMap<String, NetworkUpgradeDesc>,
-        consensus: Consensus,
-        pruneheight: Option<u64>,
+        pub value_pools: Vec<ValuePool>,
+        pub softforks: Vec<Softfork>,
+        pub upgrades: std::collections::HashMap<String, NetworkUpgradeDesc>,
+        pub consensus: Consensus,
+        pub pruneheight: Option<u64>,
         #[serde(rename = "fullyNotified")]
-        fully_notified: Option<bool>,
+        pub fully_notified: Option<bool>,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
