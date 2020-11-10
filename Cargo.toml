@@ -27,7 +27,7 @@ cfg-if = "0.1.10"
 rust_decimal = "*"
 
 [build-dependencies]
-tokio = { version = "*", features = ["macros"] }
+tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
 reqwest = { version = "0.10.8", features = ["json"] }
 serde = { version = "*", features = ["derive"] }
 dirs = { version = "*", optional = true }
