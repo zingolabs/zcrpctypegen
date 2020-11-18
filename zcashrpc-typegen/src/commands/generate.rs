@@ -17,7 +17,7 @@ use abscissa_core::{Command, Options, Runnable};
 
 type GenResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-#[derive(Command, Debug, Options, Default)]
+#[derive(Command, Debug, Default, Options)]
 pub struct GenerateCmd {
     #[options(help = "print this message")]
     help: bool,
@@ -30,11 +30,11 @@ impl Runnable for GenerateCmd {
             let usage = abscissa_core::command::Usage::for_command::<Self>();
             usage.print_info().expect("Called for side effect!");
             usage.print_usage().expect("Called for side effect!");
-        } else {
-            match wrapper_fn_to_enable_question_mark(self) {
-                Ok(()) => (),
-                Err(e) => panic!(e.to_string()),
-            }
+            return;
+        }
+        match wrapper_fn_to_enable_question_mark(self) {
+            Ok(()) => (),
+            Err(e) => panic!(e.to_string()),
         }
     }
 }
@@ -43,6 +43,7 @@ fn wrapper_fn_to_enable_question_mark(
     _cmd: &GenerateCmd,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config = crate::prelude::app_config();
+    dbg!(&config.output);
     std::fs::File::create(&config.output)?;
     for file in std::fs::read_dir(&config.input).unwrap() {
         let (file_name, file_body) = get_data(file?)?;
