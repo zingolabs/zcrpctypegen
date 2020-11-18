@@ -78,7 +78,7 @@ fn typegen(
         },
     );
     for (field_name, val) in data_items {
-        println!("Got field: {}, {}", field_name, val);
+        //println!("Got field: {}, {}", field_name, val);
         let key = proc_macro2::Ident::new(
             &field_name,
             proc_macro2::Span::call_site(),
@@ -96,14 +96,14 @@ fn typegen(
         }
     );
 
-    println!("Going to write: {}", code.to_string());
+    //println!("Going to write: {}", code.to_string());
     let output = &crate::prelude::app_config().output;
-    println!("Opening file: {:#?}", output);
+    //println!("Opening file: {:#?}", output);
     let mut output = std::fs::OpenOptions::new().append(true).open(output)?;
-    println!("Writing to file: {:#?}", output);
+    //println!("Writing to file: {:#?}", output);
     use std::io::Write as _;
     write!(output, "{}", code.to_string())?;
-    println!("Written!");
+    //println!("Written!");
     Ok(())
 }
 
@@ -119,14 +119,14 @@ fn alias(
     let aliased = quote::quote!(
         pub type #name = #type_body;
     );
-    println!("Going to write: {}", aliased.to_string());
+    //println!("Going to write: {}", aliased.to_string());
     let output = &crate::prelude::app_config().output;
-    println!("Opening file: {:#?}", output);
+    //println!("Opening file: {:#?}", output);
     let mut output = std::fs::OpenOptions::new().append(true).open(output)?;
-    println!("Writing to file: {:#?}", output);
+    //println!("Writing to file: {:#?}", output);
     use std::io::Write as _;
     write!(output, "{}", aliased.to_string())?;
-    println!("Written!");
+    //println!("Written!");
     Ok(())
 }
 
