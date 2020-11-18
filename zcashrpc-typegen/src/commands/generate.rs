@@ -49,7 +49,6 @@ fn process_response(file: std::fs::DirEntry) -> () {
         .strip_suffix(".json")
         .unwrap()
         .to_string();
-    //println!("Parsed input: {:#?}, {:#?}", name, file_body);
     match file_body {
         serde_json::Value::Object(obj) => typegen(obj, &name),
         val => alias(val, &name),
