@@ -32,29 +32,21 @@ impl Runnable for GenerateCmd {
             usage.print_usage().expect("Called for side effect!");
             return;
         }
-        match wrapper_fn_to_enable_question_mark(self) {
-            Ok(()) => (),
-            Err(e) => panic!(e.to_string()),
+        let config = crate::prelude::app_config();
+        std::fs::File::create(&config.output).expect("output creation fail");
+        for direntry_results in std::fs::read_dir(&config.input).unwrap() {
+            let file = direntry_results.expect("Problem getting direntry!");
+            let (file_name, file_body) =
+                get_data(file).expect("Couldn't unpack file!");
+            println!("Parsed input: {:#?}, {:#?}", file_name, file_body);
+            let name = file_name.strip_suffix(".json").unwrap().to_string();
+            match file_body {
+                serde_json::Value::Object(obj) => typegen(obj, &name),
+                val => alias(val, name),
+            }
+            .expect("file_body failed to match");
         }
     }
-}
-
-fn wrapper_fn_to_enable_question_mark(
-    _cmd: &GenerateCmd,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let config = crate::prelude::app_config();
-    dbg!(&config.output);
-    std::fs::File::create(&config.output)?;
-    for file in std::fs::read_dir(&config.input).unwrap() {
-        let (file_name, file_body) = get_data(file?)?;
-        println!("Parsed input: {:#?}, {:#?}", file_name, file_body);
-        let name = file_name.strip_suffix(".json").unwrap().to_string();
-        match file_body {
-            serde_json::Value::Object(obj) => typegen(obj, &name),
-            val => alias(val, name),
-        }?;
-    }
-    Ok(())
 }
 
 fn get_data(
