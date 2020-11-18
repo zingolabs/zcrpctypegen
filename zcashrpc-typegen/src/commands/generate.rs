@@ -34,12 +34,17 @@ impl Runnable for GenerateCmd {
         }
         let config = crate::prelude::app_config();
         std::fs::File::create(&config.output).expect("output creation fail");
-        for direntry_results in std::fs::read_dir(&config.input).unwrap() {
-            let file = direntry_results.expect("Problem getting direntry!");
+        for filenode in std::fs::read_dir(&config.input).unwrap() {
+            let file = filenode.expect("Problem getting direntry!");
             let file_body = get_data(&file).expect("Couldn't unpack file!");
-            let file_name = file.file_name().to_string_lossy().to_string();
-            println!("Parsed input: {:#?}, {:#?}", file_name, file_body);
-            let name = file_name.strip_suffix(".json").unwrap().to_string();
+            let name = file
+                .file_name()
+                .to_string_lossy()
+                .to_string()
+                .strip_suffix(".json")
+                .unwrap()
+                .to_string();
+            println!("Parsed input: {:#?}, {:#?}", name, file_body);
             match file_body {
                 serde_json::Value::Object(obj) => typegen(obj, &name),
                 val => alias(val, name),
