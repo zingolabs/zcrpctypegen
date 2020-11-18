@@ -36,8 +36,8 @@ impl Runnable for GenerateCmd {
         std::fs::File::create(&config.output).expect("output creation fail");
         for direntry_results in std::fs::read_dir(&config.input).unwrap() {
             let file = direntry_results.expect("Problem getting direntry!");
-            let (file_name, file_body) =
-                get_data(file).expect("Couldn't unpack file!");
+            let file_body = get_data(&file).expect("Couldn't unpack file!");
+            let file_name = file.file_name().to_string_lossy().to_string();
             println!("Parsed input: {:#?}, {:#?}", file_name, file_body);
             let name = file_name.strip_suffix(".json").unwrap().to_string();
             match file_body {
@@ -50,15 +50,14 @@ impl Runnable for GenerateCmd {
 }
 
 fn get_data(
-    file: std::fs::DirEntry,
-) -> Result<(String, serde_json::Value), Box<dyn std::error::Error>> {
-    let file_name = file.file_name().to_string_lossy().to_string();
+    file: &std::fs::DirEntry,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let mut file = std::fs::File::open(file.path())?;
     let mut file_body = String::new();
     use std::io::Read as _;
     file.read_to_string(&mut file_body)?;
     let file_body = serde_json::de::from_str(&file_body)?;
-    Ok((file_name, file_body))
+    Ok(file_body)
 }
 
 fn typegen(
