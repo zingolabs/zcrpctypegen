@@ -47,7 +47,7 @@ impl Runnable for GenerateCmd {
             //println!("Parsed input: {:#?}, {:#?}", name, file_body);
             match file_body {
                 serde_json::Value::Object(obj) => typegen(obj, &name),
-                val => alias(val, name),
+                val => alias(val, &name),
             }
             .expect("file_body failed to match");
         }
@@ -109,7 +109,7 @@ fn typegen(
 
 fn alias(
     data: serde_json::Value,
-    name: String,
+    name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if let serde_json::Value::Object(_) = data {
         unimplemented!("We don't want to create struct aliases.")
