@@ -35,25 +35,27 @@ impl Runnable for GenerateCmd {
         let config = crate::prelude::app_config();
         std::fs::File::create(&config.output).expect("output creation fail");
         for filenode in std::fs::read_dir(&config.input).unwrap() {
-            let file = filenode.expect("Problem getting direntry!");
-            let file_body = get_data(&file).expect("Couldn't unpack file!");
-            let name = file
-                .file_name()
-                .to_string_lossy()
-                .to_string()
-                .strip_suffix(".json")
-                .unwrap()
-                .to_string();
-            //println!("Parsed input: {:#?}, {:#?}", name, file_body);
-            match file_body {
-                serde_json::Value::Object(obj) => typegen(obj, &name),
-                val => alias(val, &name),
-            }
-            .expect("file_body failed to match");
+            process_response(filenode.expect("Problem getting direntry!"));
         }
     }
 }
 
+fn process_response(file: std::fs::DirEntry) -> () {
+    let file_body = get_data(&file).expect("Couldn't unpack file!");
+    let name = file
+        .file_name()
+        .to_string_lossy()
+        .to_string()
+        .strip_suffix(".json")
+        .unwrap()
+        .to_string();
+    //println!("Parsed input: {:#?}, {:#?}", name, file_body);
+    match file_body {
+        serde_json::Value::Object(obj) => typegen(obj, &name),
+        val => alias(val, &name),
+    }
+    .expect("file_body failed to match");
+}
 fn get_data(
     file: &std::fs::DirEntry,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
