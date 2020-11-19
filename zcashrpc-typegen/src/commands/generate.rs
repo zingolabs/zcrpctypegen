@@ -55,6 +55,7 @@ fn process_response(file: std::fs::DirEntry) -> () {
     }
     .expect("file_body failed to match");
 }
+
 fn get_data(
     file: &std::fs::DirEntry,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
@@ -71,14 +72,10 @@ fn typegen(
     name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut code = Vec::new();
-    let data_items = data.into_iter().fold(
-        std::collections::BTreeMap::new(),
-        |mut ret, (key, value)| {
-            ret.insert(key, value);
-            ret
-        },
-    );
-    for (field_name, val) in data_items {
+    // The default collection behind a serde_json_map is a BTreeMap
+    // and being the predicate of "in" causes into_iter to be called.
+    // See:  https://docs.serde.rs/src/serde_json/map.rs.html#3
+    for (field_name, val) in data {
         //println!("Got field: {}, {}", field_name, val);
         let key = proc_macro2::Ident::new(
             &field_name,
