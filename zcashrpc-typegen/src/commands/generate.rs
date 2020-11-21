@@ -74,7 +74,7 @@ fn typegen(
     let mut code = Vec::new();
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
-    // See:  https://docs.serde.rs/src/serde_json/map.rs.html#3
+    // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
     for (field_name, val) in data {
         //println!("Got field: {}, {}", field_name, val);
         let key = proc_macro2::Ident::new(
