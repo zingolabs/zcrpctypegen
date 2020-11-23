@@ -1,4 +1,5 @@
-//! `generate` subcommand - take a directory of JSON files, map their contents
+//! `generate` subcommand - take a directory of quizface-annotated RPC response
+//! files, map their contents
 //! to serde_json::Values, and transform those into structs.
 //! These structs represent Responses from JSON-RPC calls on the zcashd rpc
 //! server.
