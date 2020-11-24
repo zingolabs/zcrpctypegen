@@ -20,7 +20,7 @@ type GenResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Command, Debug, Default, Options)]
 pub struct GenerateCmd {
-    #[options(help = "print this message")]
+    #[options(help = "This command takes quizface annotated JSON responses and produces Rust response types.")]
     help: bool,
 }
 
