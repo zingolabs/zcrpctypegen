@@ -47,7 +47,7 @@ pub mod getblockchaininfo {
         consensus: Consensus,
         pruneheight: Option<Decimal>,
         #[serde(rename = "fullyNotified")]
-        fully_notified: Option<bool>,
+        pub fully_notified: Option<bool>,
     }
 
     #[derive(Debug, Deserialize, Serialize)]

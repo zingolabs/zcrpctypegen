@@ -28,7 +28,6 @@ impl Client {
     }
 
     zcashrpc_macros::declare_rpc_client_methods! {
-        GetInfo,
         GetBlockChainInfo,
         ZGetNewAddress,
         Generate (how_many: u32),
