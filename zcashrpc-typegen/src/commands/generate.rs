@@ -36,7 +36,6 @@ impl Runnable for GenerateCmd {
             return;
         }
         let config = crate::prelude::app_config();
-        std::fs::File::create(&config.output).expect("output creation fail");
         for filenode in std::fs::read_dir(&config.input).unwrap() {
             process_response(filenode.expect("Problem getting direntry!"));
         }
