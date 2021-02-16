@@ -1,5 +1,13 @@
 fn main() {
-    for filenode in std::fs::read_dir(&std::env::args().nth().unwrap()).unwrap()
+    std::fs::File::create(
+        &std::env::args().nth(2).unwrap_or("./output".to_string()),
+    );
+    for filenode in std::fs::read_dir(&std::path::Path::new(
+        &std::env::args()
+            .nth(1)
+            .unwrap_or("./example_dir".to_string()),
+    ))
+    .unwrap()
     {
         process_response(filenode.expect("Problem getting direntry!"));
     }
@@ -19,6 +27,12 @@ fn process_response(file: std::fs::DirEntry) -> () {
         val => alias(val, &name),
     }
     .expect("file_body failed to match");
+}
+
+fn output_path() -> Box<std::path::Path> {
+    Box::from(std::path::Path::new(
+        &std::env::args().nth(2).unwrap_or("./output".to_string()),
+    ))
 }
 
 fn get_data(
@@ -60,9 +74,9 @@ fn typegen(
     );
 
     //println!("Going to write: {}", code.to_string());
-    let output = &crate::prelude::app_config().output;
-    //println!("Opening file: {:#?}", output);
-    let mut output = std::fs::OpenOptions::new().append(true).open(output)?;
+    let mut output = std::fs::OpenOptions::new()
+        .append(true)
+        .open(output_path())?;
     //println!("Writing to file: {:#?}", output);
     use std::io::Write as _;
     write!(output, "{}", code.to_string())?;
@@ -83,9 +97,9 @@ fn alias(
         pub type #name = #type_body;
     );
     //println!("Going to write: {}", aliased.to_string());
-    let output = &crate::prelude::app_config().output;
-    //println!("Opening file: {:#?}", output);
-    let mut output = std::fs::OpenOptions::new().append(true).open(output)?;
+    let mut output = std::fs::OpenOptions::new()
+        .append(true)
+        .open(output_path())?;
     //println!("Writing to file: {:#?}", output);
     use std::io::Write as _;
     write!(output, "{}", aliased.to_string())?;
@@ -96,7 +110,7 @@ fn alias(
 fn quote_value(
     name: Option<&str>,
     val: serde_json::Value,
-) -> GenResult<proc_macro2::TokenStream> {
+) -> Result<proc_macro2::TokenStream, Box<dyn std::error::Error>> {
     Ok(match val {
         serde_json::Value::Number(_) => quote::quote!(rust_decimal::Decimal),
         serde_json::Value::Bool(_) => quote::quote!(bool),
