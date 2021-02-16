@@ -1,44 +1,7 @@
-//! `generate` subcommand - take a directory of quizface-annotated RPC response
-//! files, map their contents
-//! to serde_json::Values, and transform those into structs.
-//! These structs represent Responses from JSON-RPC calls on the zcashd rpc
-//! server.
-
-/// App-local prelude includes `app_reader()`/`app_writer()`/`app_config()`
-/// accessors along with logging macros. Customize as you see fit.
-use abscissa_core::{Command, Options, Runnable};
-
-/// `generate` subcommand
-///
-/// The `Options` proc macro generates an option parser based on the struct
-/// definition, and is defined in the `gumdrop` crate. See their documentation
-/// for a more comprehensive example:
-///
-/// <https://docs.rs/gumdrop/>
-
-type GenResult<T> = Result<T, Box<dyn std::error::Error>>;
-
-#[derive(Command, Debug, Default, Options)]
-pub struct GenerateCmd {
-    #[options(
-        help = "This command takes quizface annotated JSON responses and produces Rust response types."
-    )]
-    help: bool,
-}
-
-impl Runnable for GenerateCmd {
-    /// Start the application.
-    fn run(&self) {
-        if self.help {
-            let usage = abscissa_core::command::Usage::for_command::<Self>();
-            usage.print_info().expect("Called for side effect!");
-            usage.print_usage().expect("Called for side effect!");
-            return;
-        }
-        let config = crate::prelude::app_config();
-        for filenode in std::fs::read_dir(&config.input).unwrap() {
-            process_response(filenode.expect("Problem getting direntry!"));
-        }
+fn main() {
+    for filenode in std::fs::read_dir(&std::env::args().nth().unwrap()).unwrap()
+    {
+        process_response(filenode.expect("Problem getting direntry!"));
     }
 }
 
