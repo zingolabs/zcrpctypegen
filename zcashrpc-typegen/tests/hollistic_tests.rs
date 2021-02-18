@@ -22,4 +22,5 @@ fn call_test(test_name: &str) {
         test_name
     ));
     assert_eq!(output.unwrap(), expected.unwrap());
+    std::fs::remove_file(format!("./test_output/{}.rs", test_name)).unwrap();
 }
