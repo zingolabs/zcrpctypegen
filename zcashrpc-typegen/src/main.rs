@@ -9,6 +9,12 @@ fn main() {
     {
         process_response(filenode.expect("Problem getting direntry!"));
     }
+    assert!(std::process::Command::new("rustfmt")
+        .arg(output_path().to_string_lossy().to_string())
+        .output()
+        .unwrap()
+        .status
+        .success());
 }
 
 fn process_response(file: std::fs::DirEntry) -> () {
