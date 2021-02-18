@@ -1,5 +1,5 @@
 fn main() {
-    std::fs::File::create(output_path());
+    std::fs::File::create(output_path()).unwrap();
     for filenode in std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
             .nth(1)
@@ -16,7 +16,6 @@ fn process_response(file: std::fs::DirEntry) -> () {
     let name = file
         .file_name()
         .to_string_lossy()
-        .to_string()
         .strip_suffix(".json")
         .unwrap()
         .to_string();
@@ -157,4 +156,34 @@ fn to_camel_case(input: &str) -> String {
     let ch = ret.remove(0);
     ret.insert(0, ch.to_ascii_uppercase());
     ret
+}
+
+#[cfg(test)]
+mod unit {
+    use super::*;
+
+    #[test]
+    fn quote_value_string() {
+        let quoted_string = quote_value(None, serde_json::json!("String"));
+        assert_eq!(
+            quote::quote!(String).to_string(),
+            quoted_string.unwrap().to_string(),
+        );
+    }
+    #[test]
+    fn quote_value_number() {
+        let quoted_number = quote_value(None, serde_json::json!("Decimal"));
+        assert_eq!(
+            quote::quote!(rust_decimal::Decimal).to_string(),
+            quoted_number.unwrap().to_string(),
+        );
+    }
+    #[test]
+    fn quote_value_bool() {
+        let quoted_bool = quote_value(None, serde_json::json!("bool"));
+        assert_eq!(
+            quote::quote!(bool).to_string(),
+            quoted_bool.unwrap().to_string(),
+        );
+    }
 }
