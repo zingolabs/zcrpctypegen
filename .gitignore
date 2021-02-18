@@ -1,4 +1,4 @@
 **/Cargo.lock
 /target
 **/*.rs.bk
-/zcashrpc-typegen/output
+/zcashrpc-typegen/output.rs

@@ -1,7 +1,5 @@
 fn main() {
-    std::fs::File::create(
-        &std::env::args().nth(2).unwrap_or("./output".to_string()),
-    );
+    std::fs::File::create(output_path());
     for filenode in std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
             .nth(1)
@@ -31,7 +29,7 @@ fn process_response(file: std::fs::DirEntry) -> () {
 
 fn output_path() -> Box<std::path::Path> {
     Box::from(std::path::Path::new(
-        &std::env::args().nth(2).unwrap_or("./output".to_string()),
+        &std::env::args().nth(2).unwrap_or("./output.rs".to_string()),
     ))
 }
 
@@ -112,8 +110,19 @@ fn quote_value(
     val: serde_json::Value,
 ) -> Result<proc_macro2::TokenStream, Box<dyn std::error::Error>> {
     Ok(match val {
-        serde_json::Value::Number(_) => quote::quote!(rust_decimal::Decimal),
-        serde_json::Value::Bool(_) => quote::quote!(bool),
+        serde_json::Value::String(kind) => match kind.as_str() {
+            "Decimal" => quote::quote!(rust_decimal::Decimal),
+            "bool" => quote::quote!(bool),
+            "String" => quote::quote!(String),
+            otherwise => {
+                return Err(format!(
+                    "Unexpected type descriptor: \n {}",
+                    otherwise
+                )
+                .into())
+            }
+        },
+
         serde_json::Value::Array(mut vec) => {
             let val = quote_value(
                 name,
@@ -135,7 +144,11 @@ fn quote_value(
                 proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
             quote::quote!(#ident)
         }
-        serde_json::Value::String(_) => quote::quote!(String),
+        otherwise => {
+            return Err(
+                format!("Did not expect to recieve: \n {}", otherwise).into()
+            )
+        }
     })
 }
 
