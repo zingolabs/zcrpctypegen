@@ -2,6 +2,8 @@
 fn validate_basic_struct_test_output() {
     call_test("basic_struct");
 }
+
+#[test]
 fn validate_quizface_output() {
     call_test("quizface_output");
 }
