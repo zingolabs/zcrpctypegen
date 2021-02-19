@@ -66,7 +66,7 @@ fn typegen(
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            special_cases::four_xs(name, val)?;
+            quote_value(name, val)?; //note that we ignore the return value
             return Ok(Some(special_cases::Case::FourXs));
         }
 
