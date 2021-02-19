@@ -1,3 +1,5 @@
+mod special_cases;
+
 type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 fn main() {
@@ -28,10 +30,13 @@ fn process_response(file: std::fs::DirEntry) -> () {
         .unwrap()
         .to_string();
     match file_body {
-        serde_json::Value::Object(obj) => typegen(obj, &name),
-        val => alias(val, &name),
+        serde_json::Value::Object(obj) => {
+            typegen(obj, &name).expect("file_body failed to match");
+        }
+        val => {
+            alias(val, &name).expect("file_body failed to match");
+        }
     }
-    .expect("file_body failed to match");
 }
 
 fn output_path() -> Box<std::path::Path> {
@@ -52,12 +57,19 @@ fn get_data(file: &std::fs::DirEntry) -> GenericResult<serde_json::Value> {
 fn typegen(
     data: serde_json::Map<String, serde_json::Value>,
     name: &str,
-) -> GenericResult<()> {
+) -> GenericResult<Option<special_cases::Case>> {
     let mut code = Vec::new();
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
     for (field_name, val) in data {
+        dbg!(&field_name);
+        //special case handling
+        if &field_name == "xxxx" {
+            special_cases::four_xs(name, val)?;
+            return Ok(Some(special_cases::Case::FourXs));
+        }
+
         //println!("Got field: {}, {}", field_name, val);
         let key = proc_macro2::Ident::new(
             &field_name,
@@ -84,7 +96,7 @@ fn typegen(
     use std::io::Write as _;
     write!(output, "{}", code.to_string())?;
     //println!("Written!");
-    Ok(())
+    Ok(None)
 }
 
 fn alias(data: serde_json::Value, name: &str) -> GenericResult<()> {
@@ -151,9 +163,16 @@ fn quote_object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
 ) -> GenericResult<proc_macro2::TokenStream> {
-    typegen(val, name)?;
     let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
-    Ok(quote::quote!(#ident))
+    if let Some(case) = typegen(val, name)? {
+        match case {
+            special_cases::Case::FourXs => {
+                Ok(quote::quote!(std::collections::HashMap<String, #ident>))
+            }
+        }
+    } else {
+        Ok(quote::quote!(#ident))
+    }
 }
 
 fn to_camel_case(input: &str) -> String {

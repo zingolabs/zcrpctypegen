@@ -2,6 +2,9 @@
 fn validate_basic_struct_test_output() {
     call_test("basic_struct");
 }
+fn validate_quizface_output() {
+    call_test("quizface_output");
+}
 
 fn call_test(test_name: &str) {
     assert!(std::process::Command::new("cargo")
