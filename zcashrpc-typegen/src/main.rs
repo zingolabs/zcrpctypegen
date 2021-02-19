@@ -75,7 +75,7 @@ fn typegen(
             &field_name,
             proc_macro2::Span::call_site(),
         );
-        let val = quote_value(&to_camel_case(&field_name), val)?;
+        let val = quote_value(&capitolize_first_char(&field_name), val)?;
         let added_code = quote::quote!(pub #key: #val,);
         code.push(added_code);
     }
@@ -104,7 +104,7 @@ fn alias(data: serde_json::Value, name: &str) -> GenericResult<()> {
         unimplemented!("We don't want to create struct aliases.")
     }
     let ident = proc_macro2::Ident::new(&name, proc_macro2::Span::call_site());
-    let type_body = quote_value(&to_camel_case(name), data)?;
+    let type_body = quote_value(&capitolize_first_char(name), data)?;
     let aliased = quote::quote!(
         pub type #ident = #type_body;
     );
@@ -175,7 +175,7 @@ fn quote_object(
     }
 }
 
-fn to_camel_case(input: &str) -> String {
+fn capitolize_first_char(input: &str) -> String {
     let mut ret = input.to_string();
     let ch = ret.remove(0);
     ret.insert(0, ch.to_ascii_uppercase());
