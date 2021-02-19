@@ -164,8 +164,8 @@ fn quote_object(
     val: serde_json::Map<String, serde_json::Value>,
 ) -> GenericResult<proc_macro2::TokenStream> {
     let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
-    if let Some(case) = typegen(val, name)? {
-        match case {
+    if let Some(special_case) = typegen(val, name)? {
+        match special_case {
             special_cases::Case::FourXs => {
                 Ok(quote::quote!(std::collections::HashMap<String, #ident>))
             }
