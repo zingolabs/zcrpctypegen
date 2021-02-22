@@ -48,3 +48,22 @@ pub struct Getblockchaininfo {
     pub upgrades: std::collections::HashMap<String, Upgrades>,
     pub verificationprogress: rust_decimal::Decimal,
 }
+#[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+pub struct Getinfo {
+    pub balance: rust_decimal::Decimal,
+    pub blocks: rust_decimal::Decimal,
+    pub connections: rust_decimal::Decimal,
+    pub difficulty: rust_decimal::Decimal,
+    pub errors: String,
+    pub keypoololdest: rust_decimal::Decimal,
+    pub keypoolsize: rust_decimal::Decimal,
+    pub paytxfee: rust_decimal::Decimal,
+    pub protocolversion: rust_decimal::Decimal,
+    pub proxy: Option<String>,
+    pub relayfee: rust_decimal::Decimal,
+    pub testnet: bool,
+    pub timeoffset: rust_decimal::Decimal,
+    pub unlocked_until: rust_decimal::Decimal,
+    pub version: rust_decimal::Decimal,
+    pub walletversion: rust_decimal::Decimal,
+}

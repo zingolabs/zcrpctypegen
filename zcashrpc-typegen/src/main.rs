@@ -169,9 +169,13 @@ fn quote_terminal(
 ) -> GenericResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     Ok((
         match val {
+            //Todo: Make this better than manual option variants
             "Decimal" => quote::quote!(rust_decimal::Decimal),
+            "Option<Decimal>" => quote::quote!(Option<rust_decimal::Decimal>),
             "bool" => quote::quote!(bool),
+            "Option<bool>" => quote::quote!(Option<bool>),
             "String" => quote::quote!(String),
+            "Option<String>" => quote::quote!(Option<String>),
             otherwise => {
                 return Err(format!(
                     "Unexpected type descriptor: \n {}",
