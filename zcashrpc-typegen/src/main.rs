@@ -12,7 +12,7 @@ fn main() {
     .unwrap()
     {
         code.push(process_response(
-            filenode.expect("Problem getting direntry!"),
+            &filenode.expect("Problem getting direntry!").path(),
             proc_macro2::TokenStream::new(),
         ));
     }
@@ -36,12 +36,13 @@ fn main() {
 }
 
 fn process_response(
-    file: std::fs::DirEntry,
+    file: &std::path::Path,
     acc: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let file_body = get_data(&file).expect("Couldn't unpack file!");
     let name = capitalize_first_char(
         file.file_name()
+            .unwrap()
             .to_string_lossy()
             .strip_suffix(".json")
             .unwrap(),
@@ -62,8 +63,8 @@ fn output_path() -> Box<std::path::Path> {
     ))
 }
 
-fn get_data(file: &std::fs::DirEntry) -> GenericResult<serde_json::Value> {
-    let mut file = std::fs::File::open(file.path())?;
+fn get_data(file: &std::path::Path) -> GenericResult<serde_json::Value> {
+    let mut file = std::fs::File::open(file)?;
     let mut file_body = String::new();
     use std::io::Read as _;
     file.read_to_string(&mut file_body)?;
@@ -108,17 +109,6 @@ fn typegen(
         }
     ));
     Ok((None, acc))
-
-    /*    //println!("Going to write: {}", code.to_string());
-        let mut output = std::fs::OpenOptions::new()
-            .append(true)
-            .open(output_path())?;
-        //println!("Writing to file: {:#?}", output);
-        use std::io::Write as _;
-        write!(output, "{}", code.to_string())?;
-        //println!("Written!");
-        Ok(None)
-    */
 }
 
 fn alias(
@@ -135,15 +125,6 @@ fn alias(
     let aliased = quote::quote!(
         pub type #ident = #type_body;
     );
-    /*    //println!("Going to write: {}", aliased.to_string());
-        let mut output = std::fs::OpenOptions::new()
-            .append(true)
-            .open(output_path())?;
-        //println!("Writing to file: {:#?}", output);
-        use std::io::Write as _;
-        write!(output, "{}", aliased.to_string())?;
-        //println!("Written!");
-    */
     acc.extend(aliased);
     Ok(acc)
 }
@@ -169,9 +150,13 @@ fn quote_terminal(
 ) -> GenericResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     Ok((
         match val {
+            //Todo: Make this better than manual option variants
             "Decimal" => quote::quote!(rust_decimal::Decimal),
+            "Option<Decimal>" => quote::quote!(Option<rust_decimal::Decimal>),
             "bool" => quote::quote!(bool),
+            "Option<bool>" => quote::quote!(Option<bool>),
             "String" => quote::quote!(String),
+            "Option<String>" => quote::quote!(Option<String>),
             otherwise => {
                 return Err(format!(
                     "Unexpected type descriptor: \n {}",
@@ -227,42 +212,109 @@ fn capitalize_first_char(input: &str) -> String {
 
 #[cfg(test)]
 mod unit {
-    use super::*;
+    mod atomic {
+        use crate::*;
+        #[test]
+        fn quote_value_string() {
+            let quoted_string = quote_value(
+                "some_field",
+                serde_json::json!("String"),
+                proc_macro2::TokenStream::new(),
+            );
+            assert_eq!(
+                quote::quote!(String).to_string(),
+                quoted_string.unwrap().0.to_string(),
+            );
+        }
+        #[test]
+        fn quote_value_number() {
+            let quoted_number = quote_value(
+                "some_field",
+                serde_json::json!("Decimal"),
+                proc_macro2::TokenStream::new(),
+            );
+            assert_eq!(
+                quote::quote!(rust_decimal::Decimal).to_string(),
+                quoted_number.unwrap().0.to_string(),
+            );
+        }
+        #[test]
+        fn quote_value_bool() {
+            let quoted_bool = quote_value(
+                "some_field",
+                serde_json::json!("bool"),
+                proc_macro2::TokenStream::new(),
+            );
+            assert_eq!(
+                quote::quote!(bool).to_string(),
+                quoted_bool.unwrap().0.to_string(),
+            );
+        }
+        #[test]
+        fn quote_value_optional_string() {
+            let quoted_string = quote_value(
+                "some_field",
+                serde_json::json!("Option<String>"),
+                proc_macro2::TokenStream::new(),
+            );
+            assert_eq!(
+                quote::quote!(Option<String>).to_string(),
+                quoted_string.unwrap().0.to_string(),
+            );
+        }
+    }
+    mod intermediate {
+        use crate::*;
+        #[test]
+        fn process_response_getinfo() {
+            let getinfo_path = std::path::Path::new(
+                "./test_data/quizface_output/getinfo.json",
+            );
+            let output =
+                process_response(getinfo_path, proc_macro2::TokenStream::new());
+            assert_eq!(output.to_string(), test_consts::GETINFO_RESPONSE);
+        }
+        #[test]
+        fn quote_object_simple_unnested() {
+            let quoted_object = quote_value(
+                "somefield",
+                serde_json::json!(
+                    {
+                        "inner_a": "String",
+                        "inner_b": "bool",
+                        "inner_c": "Decimal",
+                    }
+                ),
+                proc_macro2::TokenStream::new(),
+            )
+            .unwrap();
+            assert_eq!(
+                quote::quote!(somefield).to_string(),
+                quoted_object.0.to_string(),
+            );
+            assert_eq!(
+                quoted_object.1.to_string(),
+                test_consts::SIMPLE_UNNESTED_RESPONSE,
+            );
+        }
+    }
+}
 
-    #[test]
-    fn quote_value_string() {
-        let quoted_string = quote_value(
-            "some_field",
-            serde_json::json!("String"),
-            proc_macro2::TokenStream::new(),
-        );
-        assert_eq!(
-            quote::quote!(String).to_string(),
-            quoted_string.unwrap().0.to_string(),
-        );
-    }
-    #[test]
-    fn quote_value_number() {
-        let quoted_number = quote_value(
-            "some_field",
-            serde_json::json!("Decimal"),
-            proc_macro2::TokenStream::new(),
-        );
-        assert_eq!(
-            quote::quote!(rust_decimal::Decimal).to_string(),
-            quoted_number.unwrap().0.to_string(),
-        );
-    }
-    #[test]
-    fn quote_value_bool() {
-        let quoted_bool = quote_value(
-            "some_field",
-            serde_json::json!("bool"),
-            proc_macro2::TokenStream::new(),
-        );
-        assert_eq!(
-            quote::quote!(bool).to_string(),
-            quoted_bool.unwrap().0.to_string(),
-        );
-    }
+#[cfg(test)]
+mod test_consts {
+    pub(super) const GETINFO_RESPONSE: &str = "# [derive (Debug , serde :: \
+    Deserialize , serde :: Serialize)] pub struct Getinfo { pub balance : \
+    rust_decimal :: Decimal , pub blocks : rust_decimal :: Decimal , pub \
+    connections : rust_decimal :: Decimal , pub difficulty : rust_decimal :: \
+    Decimal , pub errors : String , pub keypoololdest : rust_decimal :: \
+    Decimal , pub keypoolsize : rust_decimal :: Decimal , pub paytxfee : \
+    rust_decimal :: Decimal , pub protocolversion : rust_decimal :: Decimal , \
+    pub proxy : Option < String > , pub relayfee : rust_decimal :: Decimal , \
+    pub testnet : bool , pub timeoffset : rust_decimal :: Decimal , pub \
+    unlocked_until : rust_decimal :: Decimal , pub version : rust_decimal :: \
+    Decimal , pub walletversion : rust_decimal :: Decimal , }";
+    pub(super) const SIMPLE_UNNESTED_RESPONSE: &str = "# [derive (Debug , \
+    serde :: Deserialize , serde :: Serialize)] pub struct somefield { pub \
+    inner_a : String , pub inner_b : bool , pub inner_c : rust_decimal :: \
+    Decimal , }";
 }
