@@ -40,12 +40,12 @@ fn process_response(
     acc: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let file_body = get_data(&file).expect("Couldn't unpack file!");
-    let name = file
-        .file_name()
-        .to_string_lossy()
-        .strip_suffix(".json")
-        .unwrap()
-        .to_string();
+    let name = capitalize_first_char(
+        file.file_name()
+            .to_string_lossy()
+            .strip_suffix(".json")
+            .unwrap(),
+    );
     match file_body {
         serde_json::Value::Object(obj) => {
             typegen(obj, &name, acc)

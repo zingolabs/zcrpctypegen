@@ -32,7 +32,7 @@ pub struct Upgrades {
     pub status: String,
 }
 #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-pub struct getblockchaininfo {
+pub struct Getblockchaininfo {
     pub bestblockhash: String,
     pub blocks: rust_decimal::Decimal,
     pub chain: String,
