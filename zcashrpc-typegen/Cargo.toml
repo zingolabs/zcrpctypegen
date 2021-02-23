@@ -8,4 +8,5 @@ edition = "2018"
 serde_json = "*"
 quote = "1.0.7"
 proc-macro2 = "*"
-
+derive_more = "*"
+rust_decimal = "*"

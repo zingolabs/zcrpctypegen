@@ -1,6 +1,6 @@
+mod error;
 mod special_cases;
-
-type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
+use error::TypegenResult;
 
 fn main() {
     let mut code = Vec::new();
@@ -63,20 +63,25 @@ fn output_path() -> Box<std::path::Path> {
     ))
 }
 
-fn get_data(file: &std::path::Path) -> GenericResult<serde_json::Value> {
-    let mut file = std::fs::File::open(file)?;
+fn get_data(file_path: &std::path::Path) -> TypegenResult<serde_json::Value> {
+    let io_err_mapper =
+        |err| error::FSError::from_io_error(err, Box::from(file_path));
+    let mut file = std::fs::File::open(file_path).map_err(io_err_mapper)?;
     let mut file_body = String::new();
     use std::io::Read as _;
-    file.read_to_string(&mut file_body)?;
-    let file_body = serde_json::de::from_str(&file_body)?;
-    Ok(file_body)
+    file.read_to_string(&mut file_body).map_err(io_err_mapper)?;
+    let file_body_json =
+        serde_json::de::from_str(&file_body).map_err(|err| {
+            error::InvalidJsonError::from_serde_json_error(err, file_body)
+        })?;
+    Ok(file_body_json)
 }
 
 fn typegen(
     data: serde_json::Map<String, serde_json::Value>,
     name: &str,
     mut acc: proc_macro2::TokenStream,
-) -> GenericResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
+) -> TypegenResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
     let mut code = Vec::new();
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
@@ -115,7 +120,7 @@ fn alias(
     data: serde_json::Value,
     name: &str,
     acc: proc_macro2::TokenStream,
-) -> GenericResult<proc_macro2::TokenStream> {
+) -> TypegenResult<proc_macro2::TokenStream> {
     if let serde_json::Value::Object(_) = data {
         unimplemented!("We don't want to create struct aliases.")
     }
@@ -133,21 +138,25 @@ fn quote_value(
     name: &str,
     val: serde_json::Value,
     acc: proc_macro2::TokenStream,
-) -> GenericResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     match val {
-        serde_json::Value::String(kind) => quote_terminal(kind.as_str(), acc),
+        serde_json::Value::String(kind) => {
+            quote_terminal(name, kind.as_str(), acc)
+        }
         serde_json::Value::Array(vec) => quote_array(name, vec, acc),
         serde_json::Value::Object(obj) => quote_object(name, obj, acc),
-        otherwise => {
-            Err(format!("Did not expect to recieve: \n {}", otherwise).into())
-        }
+        otherwise => Err(error::InvalidAnnotationError {
+            kind: error::InvalidAnnotationKind::from(otherwise),
+            location: name.to_string(),
+        })?,
     }
 }
 
 fn quote_terminal(
+    name: &str,
     val: &str,
     acc: proc_macro2::TokenStream,
-) -> GenericResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     Ok((
         match val {
             //Todo: Make this better than manual option variants
@@ -157,13 +166,12 @@ fn quote_terminal(
             "Option<bool>" => quote::quote!(Option<bool>),
             "String" => quote::quote!(String),
             "Option<String>" => quote::quote!(Option<String>),
-            otherwise => {
-                return Err(format!(
-                    "Unexpected type descriptor: \n {}",
-                    otherwise
-                )
-                .into())
-            }
+            otherwise => Err(error::InvalidAnnotationError {
+                kind: error::InvalidAnnotationKind::from(
+                    serde_json::Value::String(otherwise.to_string()),
+                ),
+                location: name.to_string(),
+            })?,
         },
         acc,
     ))
@@ -173,12 +181,13 @@ fn quote_array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
     acc: proc_macro2::TokenStream,
-) -> GenericResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let (val, acc) = quote_value(
         name,
-        array_of.pop().ok_or(<Box<dyn std::error::Error>>::from(
-            String::from("Cannot determine type of empty array"),
-        ))?,
+        array_of.pop().ok_or(error::InvalidAnnotationError {
+            kind: error::InvalidAnnotationKind::EmptyArray,
+            location: name.to_string(),
+        })?,
         acc,
     )?;
     Ok((quote::quote!(Vec<#val>), acc))
@@ -188,7 +197,7 @@ fn quote_object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
     acc: proc_macro2::TokenStream,
-) -> GenericResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
     let (special_case, acc) = typegen(val, name, acc)?;
     if let Some(special_case) = special_case {
