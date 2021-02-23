@@ -50,10 +50,16 @@ fn process_response(
     match file_body {
         serde_json::Value::Object(obj) => {
             typegen(obj, &name, acc)
-                .expect("file_body failed to match")
+                .expect(&format!(
+                    "file_body of {} struct failed to match",
+                    file.to_string_lossy()
+                ))
                 .1
         }
-        val => alias(val, &name, acc).expect("file_body failed to match"),
+        val => alias(val, &name, acc).expect(&format!(
+            "file_body of {} alias failed to match",
+            file.to_string_lossy()
+        )),
     }
 }
 
@@ -92,6 +98,10 @@ fn typegen(
         if &field_name == "xxxx" {
             acc = quote_value(name, val, acc)?.1; //We ignore the first field
             return Ok((Some(special_cases::Case::FourXs), acc));
+        }
+
+        if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
+            todo!("Field name with reserved keyword: {}", field_name);
         }
 
         //println!("Got field: {}, {}", field_name, val);
