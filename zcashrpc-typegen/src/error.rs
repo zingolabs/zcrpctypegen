@@ -69,3 +69,13 @@ impl From<serde_json::Value> for InvalidAnnotationKind {
         }
     }
 }
+
+#[cfg(test)]
+mod unit {
+    use super::*;
+    #[test]
+    fn test_invalid_annotation() {
+        let iak = InvalidAnnotationKind::Null;
+        let err = InvalidAnnotationError::from((iak, "foo".to_string()));
+    }
+}
