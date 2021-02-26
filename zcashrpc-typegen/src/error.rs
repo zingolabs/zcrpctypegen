@@ -17,13 +17,12 @@ pub struct FSError {
 
 impl FSError {
     pub(crate) fn from_io_error(
-        err: std::io::Error,
-        location: Box<std::path::Path>,
-    ) -> Self {
-        Self {
+        location: &std::path::Path,
+    ) -> Box<dyn Fn(std::io::Error) -> Self + '_> {
+        Box::new(move |err: std::io::Error| Self {
             message: format!("{:?}", err.kind()),
-            location,
-        }
+            location: Box::from(location),
+        })
     }
 }
 

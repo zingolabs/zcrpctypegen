@@ -70,12 +70,12 @@ fn output_path() -> Box<std::path::Path> {
 }
 
 fn get_data(file_path: &std::path::Path) -> TypegenResult<serde_json::Value> {
-    let io_err_mapper =
-        |err| error::FSError::from_io_error(err, Box::from(file_path));
-    let mut file = std::fs::File::open(file_path).map_err(io_err_mapper)?;
+    let mut file = std::fs::File::open(file_path)
+        .map_err(error::FSError::from_io_error(file_path))?;
     let mut file_body = String::new();
     use std::io::Read as _;
-    file.read_to_string(&mut file_body).map_err(io_err_mapper)?;
+    file.read_to_string(&mut file_body)
+        .map_err(error::FSError::from_io_error(file_path))?;
     let file_body_json =
         serde_json::de::from_str(&file_body).map_err(|err| {
             error::InvalidJsonError::from_serde_json_error(err, file_body)
