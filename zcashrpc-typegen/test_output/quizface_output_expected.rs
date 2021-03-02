@@ -34,7 +34,7 @@ pub struct Upgrades {
     pub status: String,
 }
 #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-pub struct Getblockchaininfo {
+pub struct GetblockchaininfoResponse {
     pub bestblockhash: String,
     pub blocks: rust_decimal::Decimal,
     pub chain: String,
@@ -51,7 +51,7 @@ pub struct Getblockchaininfo {
     pub verificationprogress: rust_decimal::Decimal,
 }
 #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-pub struct Getinfo {
+pub struct GetinfoResponse {
     pub balance: rust_decimal::Decimal,
     pub blocks: rust_decimal::Decimal,
     pub connections: rust_decimal::Decimal,
