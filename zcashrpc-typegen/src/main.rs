@@ -100,6 +100,7 @@ fn typegen(
     mut acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
     let mut code = Vec::new();
+    let mut standalone = None;
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
@@ -115,9 +116,21 @@ fn typegen(
             todo!("Field name with reserved keyword: {}", field_name);
         }
 
+        if field_name.starts_with("alsoStandalone<") {
+            field_name = field_name
+                .trim_end_matches(">")
+                .trim_start_matches("alsoStandalone<")
+                .to_string();
+            standalone = Some(None);
+        };
+
         let (mut val, temp_acc) =
             quote_value(&capitalize_first_char(&field_name), val, acc)?;
         acc = temp_acc;
+
+        if let Some(None) = standalone {
+            standalone = Some(Some(val.clone()));
+        }
 
         if field_name.starts_with("Option<") {
             field_name = field_name
@@ -140,11 +153,26 @@ fn typegen(
     }
 
     let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
+    let body = if let Some(Some(variant)) = standalone {
+        quote::quote!(
+            pub enum #ident {
+                Regular(#variant),
+                Verbose {
+                    #(#code)*
+                },
+            }
+        )
+    } else {
+        quote::quote!(
+            pub struct #ident {
+                #(#code)*
+            }
+        )
+    };
+
     acc.extend(quote::quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
-        pub struct #ident {
-            #(#code)*
-        }
+        #body
     ));
     Ok((None, acc))
 }
@@ -288,18 +316,6 @@ mod unit {
                 quoted_bool.unwrap().0.to_string(),
             );
         }
-        #[test]
-        fn quote_value_optional_string() {
-            let quoted_string = quote_value(
-                "some_field",
-                serde_json::json!("Option<String>"),
-                proc_macro2::TokenStream::new(),
-            );
-            assert_eq!(
-                quote::quote!(Option<String>).to_string(),
-                quoted_string.unwrap().0.to_string(),
-            );
-        }
     }
     mod intermediate {
         use crate::*;
@@ -341,13 +357,14 @@ mod unit {
 #[cfg(test)]
 mod test_consts {
     pub(super) const GETINFO_RESPONSE: &str = "# [derive (Debug , serde :: \
-    Deserialize , serde :: Serialize)] pub struct GetinfoResponse { pub \
+    Deserialize , serde :: Serialize)] pub struct GetinfoResponse { pub proxy \
+    : Option < String > , pub \
     balance : rust_decimal :: Decimal , pub blocks : rust_decimal :: Decimal \
     , pub connections : rust_decimal :: Decimal , pub difficulty : rust_decimal \
     :: Decimal , pub errors : String , pub keypoololdest : rust_decimal :: \
     Decimal , pub keypoolsize : rust_decimal :: Decimal , pub paytxfee : \
     rust_decimal :: Decimal , pub protocolversion : rust_decimal :: Decimal , \
-    pub proxy : Option < String > , pub relayfee : rust_decimal :: Decimal , \
+    pub relayfee : rust_decimal :: Decimal , \
     pub testnet : bool , pub timeoffset : rust_decimal :: Decimal , pub \
     unlocked_until : rust_decimal :: Decimal , pub version : rust_decimal :: \
     Decimal , pub walletversion : rust_decimal :: Decimal , }";

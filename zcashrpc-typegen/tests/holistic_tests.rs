@@ -8,17 +8,22 @@ fn validate_quizface_output() {
     call_test("quizface_output");
 }
 
+#[test]
+fn validate_standalone_handling() {
+    call_test("standalone_handling");
+}
+
 fn call_test(test_name: &str) {
-    assert!(std::process::Command::new("cargo")
+    let output = std::process::Command::new("cargo")
         .args(&[
             "run",
             &format!("./test_data/{}", test_name),
             &format!("test_output/{}.rs", test_name),
         ])
         .output()
-        .expect("cargo run failed")
-        .status
-        .success());
+        .expect("cargo run failed");
+    dbg!(&output);
+    assert!(output.status.success());
 
     let output =
         std::fs::read_to_string(format!("./test_output/{}.rs", test_name));

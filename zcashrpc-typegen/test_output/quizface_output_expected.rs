@@ -52,6 +52,7 @@ pub struct GetblockchaininfoResponse {
 }
 #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
 pub struct GetinfoResponse {
+    pub proxy: Option<String>,
     pub balance: rust_decimal::Decimal,
     pub blocks: rust_decimal::Decimal,
     pub connections: rust_decimal::Decimal,
@@ -61,7 +62,6 @@ pub struct GetinfoResponse {
     pub keypoolsize: rust_decimal::Decimal,
     pub paytxfee: rust_decimal::Decimal,
     pub protocolversion: rust_decimal::Decimal,
-    pub proxy: Option<String>,
     pub relayfee: rust_decimal::Decimal,
     pub testnet: bool,
     pub timeoffset: rust_decimal::Decimal,
