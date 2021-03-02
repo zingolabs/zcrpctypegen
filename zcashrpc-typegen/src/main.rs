@@ -103,7 +103,7 @@ fn typegen(
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
-    for (field_name, val) in data {
+    for (mut field_name, val) in data {
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
@@ -115,14 +115,26 @@ fn typegen(
             todo!("Field name with reserved keyword: {}", field_name);
         }
 
+        let (mut val, temp_acc) =
+            quote_value(&capitalize_first_char(&field_name), val, acc)?;
+        acc = temp_acc;
+
+        if field_name.starts_with("Option<") {
+            field_name = field_name
+                .trim_end_matches(">")
+                .trim_start_matches("Option<")
+                .to_string();
+            use std::str::FromStr as _;
+            val =
+                proc_macro2::TokenStream::from_str(&format!("Option<{}>", val))
+                    .unwrap();
+        }
+
         //println!("Got field: {}, {}", field_name, val);
         let key = proc_macro2::Ident::new(
             &field_name,
             proc_macro2::Span::call_site(),
         );
-        let (val, temp_acc) =
-            quote_value(&capitalize_first_char(&field_name), val, acc)?;
-        acc = temp_acc;
         let added_code = quote::quote!(pub #key: #val,);
         code.push(added_code);
     }
@@ -180,13 +192,9 @@ fn quote_terminal(
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     Ok((
         match val {
-            //Todo: Make this better than manual option variants
             "Decimal" => quote::quote!(rust_decimal::Decimal),
-            "Option<Decimal>" => quote::quote!(Option<rust_decimal::Decimal>),
             "bool" => quote::quote!(bool),
-            "Option<bool>" => quote::quote!(Option<bool>),
             "String" => quote::quote!(String),
-            "Option<String>" => quote::quote!(Option<String>),
             otherwise => Err(error::InvalidAnnotationError {
                 kind: error::InvalidAnnotationKind::from(
                     serde_json::Value::String(otherwise.to_string()),
