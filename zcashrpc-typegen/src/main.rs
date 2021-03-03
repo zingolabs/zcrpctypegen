@@ -1,9 +1,12 @@
+//! In order to leverage all of Rust's type safety, this crate produces
+//! a set of concrete Rust types for responses from the zcashd-RPC interface.
+
 mod error;
 mod special_cases;
 use error::TypegenResult;
 
 fn main() {
-    let mut code = Vec::new();
+    let mut code: Vec<proc_macro2::TokenStream> = Vec::new();
     dbg!(&code);
     for filenode in std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
