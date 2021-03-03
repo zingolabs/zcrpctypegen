@@ -89,7 +89,7 @@ fn get_data(file_path: &std::path::Path) -> TypegenResult<serde_json::Value> {
         .map_err(&map_err_io_to_fs)?;
     let file_body_json =
         serde_json::de::from_str(&file_body).map_err(|err| {
-            error::InvalidJsonError::from_serde_json_error(err, file_body)
+            error::JsonError::from_serde_json_error(err, file_body)
         })?;
     Ok(file_body_json)
 }
@@ -206,7 +206,7 @@ fn quote_value(
         }
         serde_json::Value::Array(vec) => quote_array(name, vec, acc),
         serde_json::Value::Object(obj) => quote_object(name, obj, acc),
-        otherwise => Err(error::InvalidAnnotationError {
+        otherwise => Err(error::AnnotationError {
             kind: error::InvalidAnnotationKind::from(otherwise),
             location: name.to_string(),
         })?,
@@ -223,7 +223,7 @@ fn quote_terminal(
             "Decimal" => quote::quote!(rust_decimal::Decimal),
             "bool" => quote::quote!(bool),
             "String" => quote::quote!(String),
-            otherwise => Err(error::InvalidAnnotationError {
+            otherwise => Err(error::AnnotationError {
                 kind: error::InvalidAnnotationKind::from(
                     serde_json::Value::String(otherwise.to_string()),
                 ),
@@ -241,7 +241,7 @@ fn quote_array(
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let (val, acc) = quote_value(
         name,
-        array_of.pop().ok_or(error::InvalidAnnotationError {
+        array_of.pop().ok_or(error::AnnotationError {
             kind: error::InvalidAnnotationKind::EmptyArray,
             location: name.to_string(),
         })?,
