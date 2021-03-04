@@ -1,6 +1,7 @@
 pub type TypegenResult<T> = Result<T, TypegenError>;
+use derive_more::From as FromWrapped;
 
-#[derive(Debug, derive_more::From)]
+#[derive(Debug, FromWrapped)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum TypegenError {
     Filesystem(FSError),
@@ -41,7 +42,7 @@ impl JsonError {
     }
 }
 
-#[derive(Debug, derive_more::From)]
+#[derive(Debug, FromWrapped)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct AnnotationError {
     pub kind: InvalidAnnotationKind,
