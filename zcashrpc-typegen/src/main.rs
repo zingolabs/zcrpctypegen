@@ -5,6 +5,8 @@ mod error;
 mod special_cases;
 use error::TypegenResult;
 
+/// Process quizface-formatted response specifications from files, producing
+/// Rust types, in the `rpc_response_types.rs` file.
 fn main() {
     let mut code: Vec<proc_macro2::TokenStream> = Vec::new();
     dbg!(&code);
