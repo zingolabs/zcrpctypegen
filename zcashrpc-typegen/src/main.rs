@@ -20,24 +20,14 @@ fn main() {
     ))
     .unwrap()
     {
-        let mut code: Vec<proc_macro2::TokenStream> = Vec::new();
-        dbg!(&code);
-        code.push(process_response(
+        let code = process_response(
             &filenode.expect("Problem getting direntry!").path(),
-            proc_macro2::TokenStream::new(),
-        ));
+        );
         let mut outfile = std::fs::OpenOptions::new()
             .append(true)
             .open(output_path())
             .unwrap();
-        outfile
-            .write_all(
-                code.into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<String>()
-                    .as_bytes(),
-            )
-            .unwrap();
+        outfile.write_all(code.to_string().as_bytes()).unwrap();
         assert!(std::process::Command::new("rustfmt")
             .arg(output_path())
             .output()
@@ -47,10 +37,8 @@ fn main() {
     }
 }
 
-fn process_response(
-    file: &std::path::Path,
-    acc: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
+fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
+    let acc = proc_macro2::TokenStream::new();
     let file_body = get_data(&file).expect("Couldn't unpack file!");
     let mut name = capitalize_first_char(
         file.file_name()
@@ -331,8 +319,7 @@ mod unit {
             let getinfo_path = std::path::Path::new(
                 "./test_data/quizface_output/getinfo.json",
             );
-            let output =
-                process_response(getinfo_path, proc_macro2::TokenStream::new());
+            let output = process_response(getinfo_path);
             assert_eq!(output.to_string(), test_consts::GETINFO_RESPONSE);
         }
         #[test]
