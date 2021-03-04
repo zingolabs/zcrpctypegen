@@ -86,6 +86,7 @@ fn output_path() -> std::ffi::OsString {
     )
 }
 
+/// Handles data access from fs location through deserialization
 fn get_data(file_path: &std::path::Path) -> TypegenResult<serde_json::Value> {
     let from_io_to_fs = error::FSError::from_io_error(file_path);
     let mut file = std::fs::File::open(file_path).map_err(&from_io_to_fs)?;
