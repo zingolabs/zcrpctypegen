@@ -8,8 +8,10 @@ use error::TypegenResult;
 /// Process quizface-formatted response specifications from files, producing
 /// Rust types, in the `rpc_response_types.rs` file.
 fn main() {
-    let mut code: Vec<proc_macro2::TokenStream> = Vec::new();
-    dbg!(&code);
+    let initial_comment = r#"//proceedurally generated response types, note that zcashrpc-typegen
+           //is in early alpha, and output is subject to change at any time."#;
+    use std::io::Write as _;
+    std::fs::write(output_path(), initial_comment).unwrap();
     for filenode in std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
             .nth(1)
@@ -17,35 +19,29 @@ fn main() {
     ))
     .unwrap()
     {
+        let mut code: Vec<proc_macro2::TokenStream> = Vec::new();
+        dbg!(&code);
         code.push(process_response(
             &filenode.expect("Problem getting direntry!").path(),
             proc_macro2::TokenStream::new(),
         ));
-    }
-    let initial_comment: Vec<String> = vec![
-        r#"//proceedurally generated response types, note that zcashrpc-typegen
-            //is in early alpha, and output is subject to change at any time.
-            "#
-        .to_string(),
-    ];
-    use std::io::Write as _;
-    std::fs::File::create(output_path())
-        .unwrap()
-        .write(
-            initial_comment
-                .into_iter()
-                .chain(code.into_iter().map(|x| x.to_string()))
+        let mut outfile = std::fs::OpenOptions::new()
+            .append(true)
+            .open(output_path())
+            .unwrap();
+        outfile.write_all(
+            code.into_iter()
+                .map(|x| x.to_string())
                 .collect::<String>()
                 .as_bytes(),
-        )
-        .unwrap();
-
-    assert!(std::process::Command::new("rustfmt")
-        .arg(output_path())
-        .output()
-        .unwrap()
-        .status
-        .success());
+        );
+        assert!(std::process::Command::new("rustfmt")
+            .arg(output_path())
+            .output()
+            .unwrap()
+            .status
+            .success());
+    }
 }
 
 fn process_response(
