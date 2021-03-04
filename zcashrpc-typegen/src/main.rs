@@ -76,6 +76,8 @@ fn process_response(
     }
 }
 
+/// This function provides input for the OS interface that we access via
+/// std::process, and std::fs.
 fn output_path() -> std::ffi::OsString {
     std::ffi::OsString::from(
         std::env::args()
