@@ -9,7 +9,8 @@ use error::TypegenResult;
 /// Rust types, in the `rpc_response_types.rs` file.
 fn main() {
     let initial_comment = r#"//proceedurally generated response types, note that zcashrpc-typegen
-           //is in early alpha, and output is subject to change at any time."#;
+           //is in early alpha, and output is subject to change at any time.
+"#;
     use std::io::Write as _;
     std::fs::write(output_path(), initial_comment).unwrap();
     for filenode in std::fs::read_dir(&std::path::Path::new(
@@ -29,12 +30,14 @@ fn main() {
             .append(true)
             .open(output_path())
             .unwrap();
-        outfile.write_all(
-            code.into_iter()
-                .map(|x| x.to_string())
-                .collect::<String>()
-                .as_bytes(),
-        );
+        outfile
+            .write_all(
+                code.into_iter()
+                    .map(|x| x.to_string())
+                    .collect::<String>()
+                    .as_bytes(),
+            )
+            .unwrap();
         assert!(std::process::Command::new("rustfmt")
             .arg(output_path())
             .output()
