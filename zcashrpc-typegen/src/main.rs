@@ -78,13 +78,11 @@ fn process_response(
 }
 
 fn output_path() -> std::ffi::OsString {
-    std::path::Path::new(
-        &std::env::args()
+    std::ffi::OsString::from(
+        std::env::args()
             .nth(2)
             .unwrap_or("./../src/client/rpc_response_types.rs".to_string()),
     )
-    .as_os_str()
-    .to_os_string()
 }
 
 fn get_data(file_path: &std::path::Path) -> TypegenResult<serde_json::Value> {
