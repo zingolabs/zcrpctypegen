@@ -43,7 +43,8 @@ fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
     let mut name = capitalize_first_char(
         file.file_name()
             .unwrap()
-            .to_string_lossy()
+            .to_str()
+            .unwrap()
             .strip_suffix(".json")
             .unwrap(),
     );
@@ -53,13 +54,13 @@ fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
             typegen(obj, &name, acc)
                 .expect(&format!(
                     "file_body of {} struct failed to match",
-                    file.to_string_lossy()
+                    file.to_str().unwrap()
                 ))
                 .1
         }
         val => alias(val, &name, acc).expect(&format!(
             "file_body of {} alias failed to match",
-            file.to_string_lossy()
+            file.to_str().unwrap()
         )),
     }
 }
