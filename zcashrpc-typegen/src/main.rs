@@ -37,21 +37,6 @@ fn main() {
     }
 }
 
-fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
-    let file_body =
-        from_file_deserialize(&file).expect("Couldn't unpack file!");
-    let mut name = capitalize_first_char(
-        file.file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .strip_suffix(".json")
-            .unwrap(),
-    );
-    name.push_str("Response");
-    (name, file_body)
-}
-
 fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
     let acc = proc_macro2::TokenStream::new();
     let (name, file_body) = get_data(file);
@@ -69,6 +54,21 @@ fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
             file.to_str().unwrap()
         )),
     }
+}
+
+fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
+    let file_body =
+        from_file_deserialize(&file).expect("Couldn't unpack file!");
+    let mut name = capitalize_first_char(
+        file.file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .strip_suffix(".json")
+            .unwrap(),
+    );
+    name.push_str("Response");
+    (name, file_body)
 }
 
 /// This function provides input for the OS interface that we access via
