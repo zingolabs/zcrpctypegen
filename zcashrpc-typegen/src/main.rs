@@ -98,6 +98,11 @@ fn from_file_deserialize(
     Ok(file_body_json)
 }
 
+/// Simple wrapper that always generates Idents with "call_site" spans.
+fn callsite_ident(name: &str) -> proc_macro2::Ident {
+    proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
+}
+
 fn typegen(
     data: serde_json::Map<String, serde_json::Value>,
     name: &str,
@@ -148,15 +153,12 @@ fn typegen(
         }
 
         //println!("Got field: {}, {}", field_name, val);
-        let key = proc_macro2::Ident::new(
-            &field_name,
-            proc_macro2::Span::call_site(),
-        );
+        let key = callsite_ident(&field_name);
         let added_code = quote::quote!(pub #key: #val,);
         code.push(added_code);
     }
 
-    let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
+    let ident = callsite_ident(name);
     let body = if let Some(Some(variant)) = standalone {
         quote::quote!(
             pub enum #ident {
@@ -189,7 +191,7 @@ fn alias(
     if let serde_json::Value::Object(_) = data {
         unimplemented!("We don't want to create struct aliases.")
     }
-    let ident = proc_macro2::Ident::new(&name, proc_macro2::Span::call_site());
+    let ident = callsite_ident(&name);
     let (type_body, mut acc) =
         quote_value(&capitalize_first_char(name), data, acc)?;
     let aliased = quote::quote!(
@@ -259,7 +261,7 @@ fn quote_object(
     val: serde_json::Map<String, serde_json::Value>,
     acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
-    let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
+    let ident = callsite_ident(name);
     let (special_case, acc) = typegen(val, name, acc)?;
     if let Some(special_case) = special_case {
         match special_case {
