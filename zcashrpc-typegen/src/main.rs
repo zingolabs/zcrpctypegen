@@ -8,7 +8,7 @@ use error::TypegenResult;
 /// Process quizface-formatted response specifications from files, producing
 /// Rust types, in the `rpc_response_types.rs` file.
 fn main() {
-    let initial_comment = r#"//proceedurally generated response types, note that zcashrpc-typegen
+    let initial_comment = r#"//procedurally generated response types, note that zcashrpc-typegen
            //is in early alpha, and output is subject to change at any time.
 "#;
     use std::io::Write as _;
@@ -37,9 +37,9 @@ fn main() {
     }
 }
 
-fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
-    let acc = proc_macro2::TokenStream::new();
-    let file_body = get_data(&file).expect("Couldn't unpack file!");
+fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
+    let file_body =
+        from_file_deserialize(&file).expect("Couldn't unpack file!");
     let mut name = capitalize_first_char(
         file.file_name()
             .unwrap()
@@ -49,6 +49,12 @@ fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
             .unwrap(),
     );
     name.push_str("Response");
+    (name, file_body)
+}
+
+fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
+    let acc = proc_macro2::TokenStream::new();
+    let (name, file_body) = get_data(file);
     match file_body {
         serde_json::Value::Object(obj) => {
             typegen(obj, &name, acc)
@@ -76,7 +82,9 @@ fn output_path() -> std::ffi::OsString {
 }
 
 /// Handles data access from fs location through deserialization
-fn get_data(file_path: &std::path::Path) -> TypegenResult<serde_json::Value> {
+fn from_file_deserialize(
+    file_path: &std::path::Path,
+) -> TypegenResult<serde_json::Value> {
     let from_io_to_fs = error::FSError::from_io_error(file_path);
     let mut file = std::fs::File::open(file_path).map_err(&from_io_to_fs)?;
     let mut file_body = String::new();
