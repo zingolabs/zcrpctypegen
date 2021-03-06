@@ -20,39 +20,42 @@ fn main() {
     ))
     .unwrap()
     {
-        let code = process_response(
+        if let Ok(code) = process_response(
             &filenode.expect("Problem getting direntry!").path(),
-        );
-        let mut outfile = std::fs::OpenOptions::new()
-            .append(true)
-            .open(output_path())
-            .unwrap();
-        outfile.write_all(code.to_string().as_bytes()).unwrap();
-        assert!(std::process::Command::new("rustfmt")
-            .arg(output_path())
-            .output()
-            .unwrap()
-            .status
-            .success());
+        ) {
+            let mut outfile = std::fs::OpenOptions::new()
+                .append(true)
+                .open(output_path())
+                .unwrap();
+            outfile.write_all(code.to_string().as_bytes()).unwrap();
+            assert!(std::process::Command::new("rustfmt")
+                .arg(output_path())
+                .output()
+                .unwrap()
+                .status
+                .success());
+        } else {
+            todo!("Holy moly something is messed up!");
+        }
     }
 }
 
-fn process_response(file: &std::path::Path) -> proc_macro2::TokenStream {
+fn process_response(
+    file: &std::path::Path,
+) -> TypegenResult<proc_macro2::TokenStream> {
     let acc = proc_macro2::TokenStream::new();
     let (name, file_body) = get_data(file);
     match file_body {
-        serde_json::Value::Object(obj) => {
-            typegen(obj, &name, acc)
-                .expect(&format!(
-                    "file_body of {} struct failed to match",
-                    file.to_str().unwrap()
-                ))
-                .1
-        }
-        val => alias(val, &name, acc).expect(&format!(
+        serde_json::Value::Object(obj) => Ok(typegen(obj, &name, acc)
+            .expect(&format!(
+                "file_body of {} struct failed to match",
+                file.to_str().unwrap()
+            ))
+            .1),
+        val => Ok(alias(val, &name, acc).expect(&format!(
             "file_body of {} alias failed to match",
             file.to_str().unwrap()
-        )),
+        ))),
     }
 }
 
@@ -188,9 +191,6 @@ fn alias(
     name: &str,
     acc: proc_macro2::TokenStream,
 ) -> TypegenResult<proc_macro2::TokenStream> {
-    if let serde_json::Value::Object(_) = data {
-        unimplemented!("We don't want to create struct aliases.")
-    }
     let ident = callsite_ident(&name);
     let (type_body, mut acc) =
         quote_value(&capitalize_first_char(name), data, acc)?;
@@ -331,7 +331,10 @@ mod unit {
                 "./test_data/quizface_output/getinfo.json",
             );
             let output = process_response(getinfo_path);
-            assert_eq!(output.to_string(), test_consts::GETINFO_RESPONSE);
+            assert_eq!(
+                output.unwrap().to_string(),
+                test_consts::GETINFO_RESPONSE
+            );
         }
         #[test]
         fn quote_object_simple_unnested() {
