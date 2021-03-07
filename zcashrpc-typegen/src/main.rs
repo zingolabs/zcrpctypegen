@@ -107,7 +107,7 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
 }
 
 fn typegen(
-    data: serde_json::Map<String, serde_json::Value>,
+    inner_node: serde_json::Map<String, serde_json::Value>,
     name: &str,
     mut acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
@@ -116,11 +116,11 @@ fn typegen(
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
-    for (mut field_name, val) in data {
+    for (mut field_name, val) in inner_node {
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            acc = quote_value(name, val, acc)?.1; //We ignore the first field
+            acc = tokenize_value(name, val, acc)?.1; //We ignore the first field
             return Ok((Some(special_cases::Case::FourXs), acc));
         }
 
@@ -137,7 +137,7 @@ fn typegen(
         };
 
         let (mut val, temp_acc) =
-            quote_value(&capitalize_first_char(&field_name), val, acc)?;
+            tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
         acc = temp_acc;
 
         if let Some(None) = standalone {
@@ -193,7 +193,7 @@ fn alias(
 ) -> TypegenResult<proc_macro2::TokenStream> {
     let ident = callsite_ident(&name);
     let (type_body, mut acc) =
-        quote_value(&capitalize_first_char(name), data, acc)?;
+        tokenize_value(&capitalize_first_char(name), data, acc)?;
     let aliased = quote::quote!(
         pub type #ident = #type_body;
     );
@@ -201,17 +201,17 @@ fn alias(
     Ok(acc)
 }
 
-fn quote_value(
+fn tokenize_value(
     name: &str,
     val: serde_json::Value,
     acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     match val {
         serde_json::Value::String(kind) => {
-            quote_terminal(name, kind.as_str(), acc)
+            tokenize_terminal(name, kind.as_str(), acc)
         }
-        serde_json::Value::Array(vec) => quote_array(name, vec, acc),
-        serde_json::Value::Object(obj) => quote_object(name, obj, acc),
+        serde_json::Value::Array(vec) => tokenize_array(name, vec, acc),
+        serde_json::Value::Object(obj) => tokenize_object(name, obj, acc),
         otherwise => Err(error::AnnotationError {
             kind: error::InvalidAnnotationKind::from(otherwise),
             location: name.to_string(),
@@ -219,7 +219,7 @@ fn quote_value(
     }
 }
 
-fn quote_terminal(
+fn tokenize_terminal(
     name: &str,
     val: &str,
     acc: proc_macro2::TokenStream,
@@ -240,12 +240,12 @@ fn quote_terminal(
     ))
 }
 
-fn quote_array(
+fn tokenize_array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
     acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
-    let (val, acc) = quote_value(
+    let (val, acc) = tokenize_value(
         name,
         array_of.pop().ok_or(error::AnnotationError {
             kind: error::InvalidAnnotationKind::EmptyArray,
@@ -256,7 +256,7 @@ fn quote_array(
     Ok((quote::quote!(Vec<#val>), acc))
 }
 
-fn quote_object(
+fn tokenize_object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
     acc: proc_macro2::TokenStream,
@@ -287,8 +287,8 @@ mod unit {
     mod atomic {
         use crate::*;
         #[test]
-        fn quote_value_string() {
-            let quoted_string = quote_value(
+        fn tokenize_value_string() {
+            let quoted_string = tokenize_value(
                 "some_field",
                 serde_json::json!("String"),
                 proc_macro2::TokenStream::new(),
@@ -299,8 +299,8 @@ mod unit {
             );
         }
         #[test]
-        fn quote_value_number() {
-            let quoted_number = quote_value(
+        fn tokenize_value_number() {
+            let quoted_number = tokenize_value(
                 "some_field",
                 serde_json::json!("Decimal"),
                 proc_macro2::TokenStream::new(),
@@ -311,8 +311,8 @@ mod unit {
             );
         }
         #[test]
-        fn quote_value_bool() {
-            let quoted_bool = quote_value(
+        fn tokenize_value_bool() {
+            let quoted_bool = tokenize_value(
                 "some_field",
                 serde_json::json!("bool"),
                 proc_macro2::TokenStream::new(),
@@ -337,8 +337,8 @@ mod unit {
             );
         }
         #[test]
-        fn quote_object_simple_unnested() {
-            let quoted_object = quote_value(
+        fn tokenize_object_simple_unnested() {
+            let quoted_object = tokenize_value(
                 "somefield",
                 serde_json::json!(
                     {

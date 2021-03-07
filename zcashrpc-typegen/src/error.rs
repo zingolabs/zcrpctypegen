@@ -92,7 +92,7 @@ mod unit {
     fn test_invalid_annotation() {
         let _iak = InvalidAnnotationKind::Null;
         let expected_err = AnnotationError::from((_iak, "foo".to_string()));
-        let err = crate::quote_value(
+        let err = crate::tokenize_value(
             "foo",
             serde_json::Value::Null,
             proc_macro2::TokenStream::new(),
