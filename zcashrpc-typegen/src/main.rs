@@ -136,12 +136,12 @@ fn structgen(
             standalone = Some(None);
         };
 
-        let (mut val, temp_acc) =
+        let (mut tokenized_value, temp_acc) =
             tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
         acc = temp_acc;
 
         if let Some(None) = standalone {
-            standalone = Some(Some(val.clone()));
+            standalone = Some(Some(tokenized_value.clone()));
         }
 
         if field_name.starts_with("Option<") {
@@ -150,12 +150,14 @@ fn structgen(
                 .trim_start_matches("Option<")
                 .to_string();
             use std::str::FromStr as _;
-            val = TokenStream::from_str(&format!("Option<{}>", val)).unwrap();
+            tokenized_value =
+                TokenStream::from_str(&format!("Option<{}>", tokenized_value))
+                    .unwrap();
         }
 
         //println!("Got field: {}, {}", field_name, val);
-        let key = callsite_ident(&field_name);
-        code.push(quote!(pub #key: #val,));
+        let tokenized_field_ident = callsite_ident(&field_name);
+        code.push(quote!(pub #tokenized_field_ident: #tokenized_value,));
     }
 
     let ident = callsite_ident(struct_name);
