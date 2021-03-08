@@ -6,7 +6,7 @@ use derive_more::From as FromWrapped;
 pub enum TypegenError {
     Filesystem(FSError),
     Json(JsonError),
-    Annotation(AnnotationError),
+    Annotation(QuizfaceAnnotationError),
 }
 
 #[derive(Debug)]
@@ -44,7 +44,7 @@ impl JsonError {
 
 #[derive(Debug, FromWrapped)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct AnnotationError {
+pub struct QuizfaceAnnotationError {
     pub kind: InvalidAnnotationKind,
     pub location: String,
 }
@@ -91,7 +91,8 @@ mod unit {
     #[test]
     fn test_invalid_annotation() {
         let _iak = InvalidAnnotationKind::Null;
-        let expected_err = AnnotationError::from((_iak, "foo".to_string()));
+        let expected_err =
+            QuizfaceAnnotationError::from((_iak, "foo".to_string()));
         let err = crate::tokenize_value(
             "foo",
             serde_json::Value::Null,

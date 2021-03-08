@@ -212,7 +212,7 @@ fn tokenize_value(
         }
         serde_json::Value::Array(vec) => tokenize_array(name, vec, acc),
         serde_json::Value::Object(obj) => tokenize_object(name, obj, acc),
-        otherwise => Err(error::AnnotationError {
+        otherwise => Err(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::from(otherwise),
             location: name.to_string(),
         })?,
@@ -229,7 +229,7 @@ fn tokenize_terminal(
             "Decimal" => quote::quote!(rust_decimal::Decimal),
             "bool" => quote::quote!(bool),
             "String" => quote::quote!(String),
-            otherwise => Err(error::AnnotationError {
+            otherwise => Err(error::QuizfaceAnnotationError {
                 kind: error::InvalidAnnotationKind::from(
                     serde_json::Value::String(otherwise.to_string()),
                 ),
@@ -247,7 +247,7 @@ fn tokenize_array(
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let (val, acc) = tokenize_value(
         name,
-        array_of.pop().ok_or(error::AnnotationError {
+        array_of.pop().ok_or(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::EmptyArray,
             location: name.to_string(),
         })?,
