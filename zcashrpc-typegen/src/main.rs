@@ -46,7 +46,7 @@ fn process_response(
     let acc = proc_macro2::TokenStream::new();
     let (name, file_body) = get_data(file);
     match file_body {
-        serde_json::Value::Object(obj) => Ok(typegen(obj, &name, acc)
+        serde_json::Value::Object(obj) => Ok(structgen(obj, &name, acc)
             .expect(&format!(
                 "file_body of {} struct failed to match",
                 file.to_str().unwrap()
@@ -106,9 +106,9 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
     proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
 }
 
-fn typegen(
+fn structgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
-    name: &str,
+    struct_name: &str,
     mut acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
     let mut code = Vec::new();
@@ -120,7 +120,7 @@ fn typegen(
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            acc = tokenize_value(name, val, acc)?.1; //We ignore the first field
+            acc = tokenize_value(struct_name, val, acc)?.1; //We ignore the first field
             return Ok((Some(special_cases::Case::FourXs), acc));
         }
 
@@ -161,7 +161,7 @@ fn typegen(
         code.push(added_code);
     }
 
-    let ident = callsite_ident(name);
+    let ident = callsite_ident(struct_name);
     let body = if let Some(Some(variant)) = standalone {
         quote::quote!(
             pub enum #ident {
@@ -261,7 +261,7 @@ fn tokenize_object(
     acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let ident = callsite_ident(name);
-    let (special_case, acc) = typegen(val, name, acc)?;
+    let (special_case, acc) = structgen(val, name, acc)?;
     if let Some(special_case) = special_case {
         match special_case {
             special_cases::Case::FourXs => Ok((
