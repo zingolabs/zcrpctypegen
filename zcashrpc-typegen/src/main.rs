@@ -221,20 +221,23 @@ fn tokenize_value(
 
 fn tokenize_terminal(
     name: &str,
-    val: &str,
+    label: &str,
     acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     Ok((
-        match val {
+        match label {
             "Decimal" => quote::quote!(rust_decimal::Decimal),
             "bool" => quote::quote!(bool),
             "String" => quote::quote!(String),
-            otherwise => Err(error::QuizfaceAnnotationError {
-                kind: error::InvalidAnnotationKind::from(
-                    serde_json::Value::String(otherwise.to_string()),
-                ),
-                location: name.to_string(),
-            })?,
+            otherwise => {
+                return Err(error::QuizfaceAnnotationError {
+                    kind: error::InvalidAnnotationKind::from(
+                        serde_json::Value::String(otherwise.to_string()),
+                    ),
+                    location: name.to_string(),
+                }
+                .into())
+            }
         },
         acc,
     ))
