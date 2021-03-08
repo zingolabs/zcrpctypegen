@@ -207,8 +207,8 @@ fn tokenize_value(
     acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     match val {
-        serde_json::Value::String(kind) => {
-            tokenize_terminal(name, kind.as_str(), acc)
+        serde_json::Value::String(label) => {
+            tokenize_terminal(name, label.as_str()).map(|x| (x, acc))
         }
         serde_json::Value::Array(vec) => tokenize_array(name, vec, acc),
         serde_json::Value::Object(obj) => tokenize_object(name, obj, acc),
@@ -222,25 +222,21 @@ fn tokenize_value(
 fn tokenize_terminal(
     name: &str,
     label: &str,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
-    Ok((
-        match label {
-            "Decimal" => quote::quote!(rust_decimal::Decimal),
-            "bool" => quote::quote!(bool),
-            "String" => quote::quote!(String),
-            otherwise => {
-                return Err(error::QuizfaceAnnotationError {
-                    kind: error::InvalidAnnotationKind::from(
-                        serde_json::Value::String(otherwise.to_string()),
-                    ),
-                    location: name.to_string(),
-                }
-                .into())
+) -> TypegenResult<proc_macro2::TokenStream> {
+    Ok(match label {
+        "Decimal" => quote::quote!(rust_decimal::Decimal),
+        "bool" => quote::quote!(bool),
+        "String" => quote::quote!(String),
+        otherwise => {
+            return Err(error::QuizfaceAnnotationError {
+                kind: error::InvalidAnnotationKind::from(
+                    serde_json::Value::String(otherwise.to_string()),
+                ),
+                location: name.to_string(),
             }
-        },
-        acc,
-    ))
+            .into())
+        }
+    })
 }
 
 fn tokenize_array(
