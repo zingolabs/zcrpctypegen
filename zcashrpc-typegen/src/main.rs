@@ -107,7 +107,7 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
 }
 
 fn typegen(
-    inner_node: serde_json::Map<String, serde_json::Value>,
+    inner_nodes: serde_json::Map<String, serde_json::Value>,
     name: &str,
     mut acc: proc_macro2::TokenStream,
 ) -> TypegenResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
@@ -116,7 +116,7 @@ fn typegen(
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
-    for (mut field_name, val) in inner_node {
+    for (mut field_name, val) in inner_nodes {
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
