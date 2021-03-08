@@ -1,11 +1,12 @@
 pub type TypegenResult<T> = Result<T, TypegenError>;
+use derive_more::From as FromWrapped;
 
-#[derive(Debug, derive_more::From)]
+#[derive(Debug, FromWrapped)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum TypegenError {
     Filesystem(FSError),
-    InvalidJson(InvalidJsonError),
-    InvalidAnnotation(InvalidAnnotationError),
+    Json(JsonError),
+    Annotation(AnnotationError),
 }
 
 #[derive(Debug)]
@@ -27,12 +28,12 @@ impl FSError {
 }
 
 #[derive(Debug)]
-pub struct InvalidJsonError {
+pub struct JsonError {
     err: serde_json::Error,
     input: String,
 }
 
-impl InvalidJsonError {
+impl JsonError {
     pub fn from_serde_json_error(
         err: serde_json::Error,
         input: String,
@@ -41,9 +42,9 @@ impl InvalidJsonError {
     }
 }
 
-#[derive(Debug, derive_more::From)]
+#[derive(Debug, FromWrapped)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct InvalidAnnotationError {
+pub struct AnnotationError {
     pub kind: InvalidAnnotationKind,
     pub location: String,
 }
@@ -77,27 +78,34 @@ impl From<serde_json::Value> for InvalidAnnotationKind {
 mod unit {
     use super::*;
     macro_rules! compare {
-            ($a:ident, $b:ident: $($f:ident),*) => {
+            ($a:ident, $b:ident: $($f:ident)|*) => {
                 $a.input == $b.input $(&& $a.err.$f() == $b.err.$f())*
             }
         }
 
-    impl PartialEq<Self> for InvalidJsonError {
+    impl PartialEq<Self> for JsonError {
         fn eq(&self, other: &Self) -> bool {
-            compare!(self, other: line, column, classify)
+            compare!(self, other: line | column | classify)
         }
     }
     #[test]
     fn test_invalid_annotation() {
-        let iak = InvalidAnnotationKind::Null;
-        let expected_err =
-            InvalidAnnotationError::from((iak, "foo".to_string()));
-        let err = crate::quote_value(
+        let _iak = InvalidAnnotationKind::Null;
+        let expected_err = AnnotationError::from((_iak, "foo".to_string()));
+        let err = crate::tokenize_value(
             "foo",
             serde_json::Value::Null,
             proc_macro2::TokenStream::new(),
         )
         .unwrap_err();
-        assert_eq!(TypegenError::InvalidAnnotation(expected_err), err);
+        assert_eq!(TypegenError::Annotation(expected_err), err);
+    }
+    #[test]
+    fn test_invalid_terminal() {
+        let invalid_label = "NOT A VALID LABEL";
+        let expected_invalid =
+            serde_json::Value::String(invalid_label.to_string());
+        let _iak = InvalidAnnotationKind::from(expected_invalid);
+        //let err = crate::quote_terminal()
     }
 }
