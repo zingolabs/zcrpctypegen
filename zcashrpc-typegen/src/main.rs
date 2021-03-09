@@ -112,7 +112,8 @@ fn structgen(
     mut acc: TokenStream,
 ) -> TypegenResult<(Option<special_cases::Case>, TokenStream)> {
     let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
-    let mut standalone = None;
+    let mut contained_and_independent = false;
+    let mut contained_and_independent_tokens = TokenStream::new();
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
@@ -120,7 +121,7 @@ fn structgen(
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            acc = tokenize_value(struct_name, val, acc)?.1; //We ignore the first field
+            acc = tokenize_value(struct_name, val, acc)?.1; // .0 unused
             return Ok((Some(special_cases::Case::FourXs), acc));
         }
 
@@ -133,7 +134,7 @@ fn structgen(
                 .trim_end_matches(">")
                 .trim_start_matches("alsoStandalone<")
                 .to_string();
-            standalone = Some(None);
+            contained_and_independent = true;
         };
 
         let mut option = false;
@@ -155,8 +156,8 @@ fn structgen(
                     .unwrap();
         }
 
-        if let Some(None) = standalone {
-            standalone = Some(Some(tokenized_val.clone()));
+        if contained_and_independent_tokens.is_empty() {
+            contained_and_independent_tokens = tokenized_val.clone();
         }
 
         //println!("Got field: {}, {}", field_name, val);
@@ -165,25 +166,21 @@ fn structgen(
     }
 
     let ident = callsite_ident(struct_name);
-    let body = match standalone {
-        None => {
-            quote!(
-                pub struct #ident {
+    let body = if contained_and_independent {
+        quote!(
+            pub enum #ident {
+                Regular(#contained_and_independent_tokens),
+                Verbose {
                     #(#ident_val_tokens)*
-                }
-            )
-        }
-        Some(Some(variant)) => {
-            quote!(
-                pub enum #ident {
-                    Regular(#variant),
-                    Verbose {
-                        #(#ident_val_tokens)*
-                    },
-                }
-            )
-        }
-        Some(None) => panic!(),
+                },
+            }
+        )
+    } else {
+        quote!(
+            pub struct #ident {
+                #(#ident_val_tokens)*
+            }
+        )
     };
 
     acc.extend(quote!(
