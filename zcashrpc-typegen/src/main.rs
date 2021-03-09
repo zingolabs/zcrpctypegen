@@ -112,8 +112,8 @@ fn structgen(
     mut acc: TokenStream,
 ) -> TypegenResult<(Option<special_cases::Case>, TokenStream)> {
     let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
-    let mut contained_and_independent = false;
-    let mut contained_and_independent_tokens = TokenStream::new();
+    let mut atomic_response = true;
+    let mut chaininfofalse_tokens = TokenStream::new();
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
@@ -134,7 +134,7 @@ fn structgen(
                 .trim_end_matches(">")
                 .trim_start_matches("alsoStandalone<")
                 .to_string();
-            contained_and_independent = true;
+            atomic_response = false;
         };
 
         let mut option = false;
@@ -156,8 +156,8 @@ fn structgen(
                     .unwrap();
         }
 
-        if contained_and_independent_tokens.is_empty() {
-            contained_and_independent_tokens = tokenized_val.clone();
+        if chaininfofalse_tokens.is_empty() {
+            chaininfofalse_tokens = tokenized_val.clone();
         }
 
         //println!("Got field: {}, {}", field_name, val);
@@ -166,19 +166,20 @@ fn structgen(
     }
 
     let ident = callsite_ident(struct_name);
-    let body = if contained_and_independent {
-        quote!(
-            pub enum #ident {
-                Regular(#contained_and_independent_tokens),
-                Verbose {
-                    #(#ident_val_tokens)*
-                },
-            }
-        )
-    } else {
+    let body = if atomic_response {
         quote!(
             pub struct #ident {
                 #(#ident_val_tokens)*
+            }
+        )
+    } else {
+        // getaddressdeltas and getaddressutxos "(or, if chainInfo is true)"
+        quote!(
+            pub enum #ident {
+                ChainInfoFalse(#chaininfofalse_tokens),
+                ChainInfoTrue {
+                    #(#ident_val_tokens)*
+                },
             }
         )
     };
