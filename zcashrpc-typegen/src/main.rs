@@ -4,6 +4,8 @@
 mod error;
 mod special_cases;
 use error::TypegenResult;
+use proc_macro2::TokenStream;
+use quote::quote;
 
 /// Process quizface-formatted response specifications from files, producing
 /// Rust types, in the `rpc_response_types.rs` file.
@@ -40,13 +42,11 @@ fn main() {
     }
 }
 
-fn process_response(
-    file: &std::path::Path,
-) -> TypegenResult<proc_macro2::TokenStream> {
-    let acc = proc_macro2::TokenStream::new();
+fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
+    let acc = TokenStream::new();
     let (name, file_body) = get_data(file);
     match file_body {
-        serde_json::Value::Object(obj) => Ok(typegen(obj, &name, acc)
+        serde_json::Value::Object(obj) => Ok(structgen(obj, &name, acc)
             .expect(&format!(
                 "file_body of {} struct failed to match",
                 file.to_str().unwrap()
@@ -106,80 +106,93 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
     proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
 }
 
-fn typegen(
-    inner_node: serde_json::Map<String, serde_json::Value>,
-    name: &str,
-    mut acc: proc_macro2::TokenStream,
-) -> TypegenResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
-    let mut code = Vec::new();
-    let mut standalone = None;
+fn handle_options_standalones_and_keywords(
+    field_name: &mut String,
+    atomic_response: &mut bool,
+    option: &mut bool,
+) -> () {
+    if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
+        todo!("Field name with reserved keyword: {}", field_name);
+    }
+
+    if field_name.starts_with("alsoStandalone<") {
+        *field_name = field_name
+            .trim_end_matches(">")
+            .trim_start_matches("alsoStandalone<")
+            .to_string();
+        *atomic_response = false;
+    } else if field_name.starts_with("Option<") {
+        *field_name = field_name
+            .trim_end_matches(">")
+            .trim_start_matches("Option<")
+            .to_string();
+        *option = true;
+    }
+}
+fn structgen(
+    inner_nodes: serde_json::Map<String, serde_json::Value>,
+    struct_name: &str,
+    mut acc: TokenStream,
+) -> TypegenResult<(Option<special_cases::Case>, TokenStream)> {
+    let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
+    let mut atomic_response = true;
+    let mut chaininfofalse_tokens = TokenStream::new();
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
-    for (mut field_name, val) in inner_node {
+    for (mut field_name, val) in inner_nodes {
+        let mut option = false;
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            acc = tokenize_value(name, val, acc)?.1; //We ignore the first field
+            acc = tokenize_value(struct_name, val, acc)?.1; // .0 unused
             return Ok((Some(special_cases::Case::FourXs), acc));
         }
 
-        if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
-            todo!("Field name with reserved keyword: {}", field_name);
-        }
-
-        if field_name.starts_with("alsoStandalone<") {
-            field_name = field_name
-                .trim_end_matches(">")
-                .trim_start_matches("alsoStandalone<")
-                .to_string();
-            standalone = Some(None);
-        };
-
-        let (mut val, temp_acc) =
+        handle_options_standalones_and_keywords(
+            &mut field_name,
+            &mut atomic_response,
+            &mut option,
+        );
+        let (mut tokenized_val, temp_acc) =
             tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
         acc = temp_acc;
-
-        if let Some(None) = standalone {
-            standalone = Some(Some(val.clone()));
-        }
-
-        if field_name.starts_with("Option<") {
-            field_name = field_name
-                .trim_end_matches(">")
-                .trim_start_matches("Option<")
-                .to_string();
+        if option {
             use std::str::FromStr as _;
-            val =
-                proc_macro2::TokenStream::from_str(&format!("Option<{}>", val))
+            tokenized_val =
+                TokenStream::from_str(&format!("Option<{}>", tokenized_val))
                     .unwrap();
         }
 
+        if chaininfofalse_tokens.is_empty() {
+            chaininfofalse_tokens = tokenized_val.clone();
+        }
+
         //println!("Got field: {}, {}", field_name, val);
-        let key = callsite_ident(&field_name);
-        let added_code = quote::quote!(pub #key: #val,);
-        code.push(added_code);
+        let token_ident = callsite_ident(&field_name);
+        ident_val_tokens.push(quote!(pub #token_ident: #tokenized_val,));
     }
 
-    let ident = callsite_ident(name);
-    let body = if let Some(Some(variant)) = standalone {
-        quote::quote!(
-            pub enum #ident {
-                Regular(#variant),
-                Verbose {
-                    #(#code)*
-                },
+    let ident = callsite_ident(struct_name);
+    let body = if atomic_response {
+        quote!(
+            pub struct #ident {
+                #(#ident_val_tokens)*
             }
         )
     } else {
-        quote::quote!(
-            pub struct #ident {
-                #(#code)*
+        // getaddressdeltas and getaddressutxos "(or, if chainInfo is true)"
+        quote!(
+            pub enum #ident {
+                ChainInfoFalse(#chaininfofalse_tokens),
+                ChainInfoTrue {
+                    #(#ident_val_tokens)*
+                },
             }
         )
     };
 
-    acc.extend(quote::quote!(
+    acc.extend(quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
         #body
     ));
@@ -189,12 +202,12 @@ fn typegen(
 fn alias(
     data: serde_json::Value,
     name: &str,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<proc_macro2::TokenStream> {
+    acc: TokenStream,
+) -> TypegenResult<TokenStream> {
     let ident = callsite_ident(&name);
     let (type_body, mut acc) =
         tokenize_value(&capitalize_first_char(name), data, acc)?;
-    let aliased = quote::quote!(
+    let aliased = quote!(
         pub type #ident = #type_body;
     );
     acc.extend(aliased);
@@ -204,74 +217,69 @@ fn alias(
 fn tokenize_value(
     name: &str,
     val: serde_json::Value,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+    acc: TokenStream,
+) -> TypegenResult<(TokenStream, TokenStream)> {
     match val {
-        serde_json::Value::String(kind) => {
-            tokenize_terminal(name, kind.as_str(), acc)
+        serde_json::Value::String(label) => {
+            tokenize_terminal(name, label.as_str()).map(|x| (x, acc))
         }
         serde_json::Value::Array(vec) => tokenize_array(name, vec, acc),
         serde_json::Value::Object(obj) => tokenize_object(name, obj, acc),
-        otherwise => Err(error::AnnotationError {
+        otherwise => Err(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::from(otherwise),
             location: name.to_string(),
         })?,
     }
 }
 
-fn tokenize_terminal(
-    name: &str,
-    val: &str,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
-    Ok((
-        match val {
-            "Decimal" => quote::quote!(rust_decimal::Decimal),
-            "bool" => quote::quote!(bool),
-            "String" => quote::quote!(String),
-            otherwise => Err(error::AnnotationError {
+fn tokenize_terminal(name: &str, label: &str) -> TypegenResult<TokenStream> {
+    Ok(match label {
+        "Decimal" => quote!(rust_decimal::Decimal),
+        "bool" => quote!(bool),
+        "String" => quote!(String),
+        otherwise => {
+            return Err(error::QuizfaceAnnotationError {
                 kind: error::InvalidAnnotationKind::from(
                     serde_json::Value::String(otherwise.to_string()),
                 ),
                 location: name.to_string(),
-            })?,
-        },
-        acc,
-    ))
+            }
+            .into())
+        }
+    })
 }
 
 fn tokenize_array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+    acc: TokenStream,
+) -> TypegenResult<(TokenStream, TokenStream)> {
     let (val, acc) = tokenize_value(
         name,
-        array_of.pop().ok_or(error::AnnotationError {
+        array_of.pop().ok_or(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::EmptyArray,
             location: name.to_string(),
         })?,
         acc,
     )?;
-    Ok((quote::quote!(Vec<#val>), acc))
+    Ok((quote!(Vec<#val>), acc))
 }
 
 fn tokenize_object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+    acc: TokenStream,
+) -> TypegenResult<(TokenStream, TokenStream)> {
     let ident = callsite_ident(name);
-    let (special_case, acc) = typegen(val, name, acc)?;
+    let (special_case, acc) = structgen(val, name, acc)?;
     if let Some(special_case) = special_case {
         match special_case {
-            special_cases::Case::FourXs => Ok((
-                quote::quote!(std::collections::HashMap<String, #ident>),
-                acc,
-            )),
+            special_cases::Case::FourXs => {
+                Ok((quote!(std::collections::HashMap<String, #ident>), acc))
+            }
         }
     } else {
-        Ok((quote::quote!(#ident), acc))
+        Ok((quote!(#ident), acc))
     }
 }
 
@@ -291,10 +299,10 @@ mod unit {
             let quoted_string = tokenize_value(
                 "some_field",
                 serde_json::json!("String"),
-                proc_macro2::TokenStream::new(),
+                TokenStream::new(),
             );
             assert_eq!(
-                quote::quote!(String).to_string(),
+                quote!(String).to_string(),
                 quoted_string.unwrap().0.to_string(),
             );
         }
@@ -303,10 +311,10 @@ mod unit {
             let quoted_number = tokenize_value(
                 "some_field",
                 serde_json::json!("Decimal"),
-                proc_macro2::TokenStream::new(),
+                TokenStream::new(),
             );
             assert_eq!(
-                quote::quote!(rust_decimal::Decimal).to_string(),
+                quote!(rust_decimal::Decimal).to_string(),
                 quoted_number.unwrap().0.to_string(),
             );
         }
@@ -315,10 +323,10 @@ mod unit {
             let quoted_bool = tokenize_value(
                 "some_field",
                 serde_json::json!("bool"),
-                proc_macro2::TokenStream::new(),
+                TokenStream::new(),
             );
             assert_eq!(
-                quote::quote!(bool).to_string(),
+                quote!(bool).to_string(),
                 quoted_bool.unwrap().0.to_string(),
             );
         }
@@ -347,11 +355,11 @@ mod unit {
                         "inner_c": "Decimal",
                     }
                 ),
-                proc_macro2::TokenStream::new(),
+                TokenStream::new(),
             )
             .unwrap();
             assert_eq!(
-                quote::quote!(somefield).to_string(),
+                quote!(somefield).to_string(),
                 quoted_object.0.to_string(),
             );
             assert_eq!(
