@@ -45,18 +45,34 @@ fn main() {
 fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
     let acc = TokenStream::new();
     let (name, file_body) = get_data(file);
-    match file_body {
-        serde_json::Value::Object(obj) => Ok(structgen(obj, &name, acc)
-            .expect(&format!(
-                "file_body of {} struct failed to match",
-                file.to_str().unwrap()
-            ))
-            .1),
-        val => Ok(alias(val, &name, acc).expect(&format!(
+    let mod_name = callsite_ident(&match file
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .strip_suffix(".json")
+        .unwrap()
+    {
+        name if special_cases::RESERVED_KEYWORDS.contains(&name) => {
+            format!("{}_mod", name)
+        }
+        name => name.to_string(),
+    });
+    let output = match file_body {
+        serde_json::Value::Object(obj) => {
+            structgen(obj, &name, acc)
+                .expect(&format!(
+                    "file_body of {} struct failed to match",
+                    file.to_str().unwrap()
+                ))
+                .1
+        }
+        val => alias(val, &name, acc).expect(&format!(
             "file_body of {} alias failed to match",
             file.to_str().unwrap()
-        ))),
-    }
+        )),
+    };
+    Ok(quote::quote!(pub mod #mod_name { #output }))
 }
 
 fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
@@ -154,6 +170,15 @@ fn structgen(
             &mut atomic_response,
             &mut option,
         );
+        let mut rename = proc_macro2::TokenStream::new();
+
+        if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
+            rename = format!("#[serde(rename = \"{}\")]", &field_name)
+                .parse()
+                .unwrap();
+            field_name.push_str("_field");
+        }
+
         let (mut tokenized_val, temp_acc) =
             tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
         acc = temp_acc;
@@ -168,9 +193,9 @@ fn structgen(
             chaininfofalse_tokens = tokenized_val.clone();
         }
 
-        //println!("Got field: {}, {}", field_name, val);
         let token_ident = callsite_ident(&field_name);
-        ident_val_tokens.push(quote!(pub #token_ident: #tokenized_val,));
+        ident_val_tokens
+            .push(quote!(#rename pub #token_ident: #tokenized_val,));
     }
 
     let ident = callsite_ident(struct_name);
@@ -205,8 +230,11 @@ fn alias(
     acc: TokenStream,
 ) -> TypegenResult<TokenStream> {
     let ident = callsite_ident(&name);
-    let (type_body, mut acc) =
-        tokenize_value(&capitalize_first_char(name), data, acc)?;
+    let (type_body, mut acc) = tokenize_value(
+        &capitalize_first_char(name.trim_end_matches("Response")),
+        data,
+        acc,
+    )?;
     let aliased = quote!(
         pub type #ident = #type_body;
     );
@@ -237,6 +265,10 @@ fn tokenize_terminal(name: &str, label: &str) -> TypegenResult<TokenStream> {
         "Decimal" => quote!(rust_decimal::Decimal),
         "bool" => quote!(bool),
         "String" => quote!(String),
+        "hexadecimal" => quote!(String),
+        "INSUFFICIENT" => quote!(compile_error!(
+            "Insufficient zcash-cli help output to autogenerate type"
+        )),
         otherwise => {
             return Err(error::QuizfaceAnnotationError {
                 kind: error::InvalidAnnotationKind::from(
