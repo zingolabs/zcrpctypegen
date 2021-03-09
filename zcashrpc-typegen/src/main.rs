@@ -111,7 +111,7 @@ fn structgen(
     struct_name: &str,
     mut acc: TokenStream,
 ) -> TypegenResult<(Option<special_cases::Case>, TokenStream)> {
-    let mut ident_val_tokens = Vec::new();
+    let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
     let mut standalone = None;
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
@@ -136,23 +136,26 @@ fn structgen(
             standalone = Some(None);
         };
 
-        let (mut tokenized_val, temp_acc) =
-            tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
-        acc = temp_acc;
-
-        if let Some(None) = standalone {
-            standalone = Some(Some(tokenized_val.clone()));
-        }
-
+        let mut option = false;
         if field_name.starts_with("Option<") {
+            option = true;
             field_name = field_name
                 .trim_end_matches(">")
                 .trim_start_matches("Option<")
                 .to_string();
+        }
+
+        let (mut tokenized_val, temp_acc) =
+            tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
+        acc = temp_acc;
+        if option {
             use std::str::FromStr as _;
             tokenized_val =
                 TokenStream::from_str(&format!("Option<{}>", tokenized_val))
                     .unwrap();
+        }
+        if let Some(None) = standalone {
+            standalone = Some(Some(tokenized_val.clone()));
         }
 
         //println!("Got field: {}, {}", field_name, val);
