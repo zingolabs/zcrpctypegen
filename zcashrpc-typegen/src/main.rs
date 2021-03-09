@@ -154,6 +154,7 @@ fn structgen(
                 TokenStream::from_str(&format!("Option<{}>", tokenized_val))
                     .unwrap();
         }
+
         if let Some(None) = standalone {
             standalone = Some(Some(tokenized_val.clone()));
         }
@@ -164,21 +165,25 @@ fn structgen(
     }
 
     let ident = callsite_ident(struct_name);
-    let body = if let Some(Some(variant)) = standalone {
-        quote!(
-            pub enum #ident {
-                Regular(#variant),
-                Verbose {
+    let body = match standalone {
+        None => {
+            quote!(
+                pub struct #ident {
                     #(#ident_val_tokens)*
-                },
-            }
-        )
-    } else {
-        quote!(
-            pub struct #ident {
-                #(#ident_val_tokens)*
-            }
-        )
+                }
+            )
+        }
+        Some(Some(variant)) => {
+            quote!(
+                pub enum #ident {
+                    Regular(#variant),
+                    Verbose {
+                        #(#ident_val_tokens)*
+                    },
+                }
+            )
+        }
+        Some(None) => panic!(),
     };
 
     acc.extend(quote!(
