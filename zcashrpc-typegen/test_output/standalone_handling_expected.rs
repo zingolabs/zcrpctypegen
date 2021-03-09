@@ -20,8 +20,8 @@ pub struct Start {
 }
 #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
 pub enum GetaddressdeltasResponse {
-    Regular(Vec<Deltas>),
-    Verbose {
+    ChainInfoFalse(Vec<Deltas>),
+    ChainInfoTrue {
         pub deltas: Vec<Deltas>,
         pub end: End,
         pub start: Start,

@@ -106,6 +106,29 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
     proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
 }
 
+fn handle_options_and_standalones(
+    field_name: &mut String,
+    atomic_response: &mut bool,
+    option: &mut bool,
+) -> () {
+    if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
+        todo!("Field name with reserved keyword: {}", field_name);
+    }
+
+    if field_name.starts_with("alsoStandalone<") {
+        *field_name = field_name
+            .trim_end_matches(">")
+            .trim_start_matches("alsoStandalone<")
+            .to_string();
+        *atomic_response = false;
+    } else if field_name.starts_with("Option<") {
+        *field_name = field_name
+            .trim_end_matches(">")
+            .trim_start_matches("Option<")
+            .to_string();
+        *option = true;
+    }
+}
 fn structgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
     struct_name: &str,
@@ -118,6 +141,7 @@ fn structgen(
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
     for (mut field_name, val) in inner_nodes {
+        let mut option = false;
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
@@ -125,27 +149,11 @@ fn structgen(
             return Ok((Some(special_cases::Case::FourXs), acc));
         }
 
-        if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
-            todo!("Field name with reserved keyword: {}", field_name);
-        }
-
-        if field_name.starts_with("alsoStandalone<") {
-            field_name = field_name
-                .trim_end_matches(">")
-                .trim_start_matches("alsoStandalone<")
-                .to_string();
-            atomic_response = false;
-        };
-
-        let mut option = false;
-        if field_name.starts_with("Option<") {
-            option = true;
-            field_name = field_name
-                .trim_end_matches(">")
-                .trim_start_matches("Option<")
-                .to_string();
-        }
-
+        handle_options_and_standalones(
+            &mut field_name,
+            &mut atomic_response,
+            &mut option,
+        );
         let (mut tokenized_val, temp_acc) =
             tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
         acc = temp_acc;
