@@ -106,7 +106,7 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
     proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
 }
 
-fn handle_options_and_standalones(
+fn handle_options_standalones_and_keywords(
     field_name: &mut String,
     atomic_response: &mut bool,
     option: &mut bool,
@@ -149,7 +149,7 @@ fn structgen(
             return Ok((Some(special_cases::Case::FourXs), acc));
         }
 
-        handle_options_and_standalones(
+        handle_options_standalones_and_keywords(
             &mut field_name,
             &mut atomic_response,
             &mut option,
