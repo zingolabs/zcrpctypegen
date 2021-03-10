@@ -43,7 +43,7 @@ fn main() {
 }
 
 fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
-    let acc = TokenStream::new();
+    let acc = Vec::new();
     let (name, file_body) = get_data(file);
     let mod_name = callsite_ident(&match file
         .file_name()
@@ -58,7 +58,7 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
         }
         name => name.to_string(),
     });
-    let output = match file_body {
+    let mut output = match file_body {
         serde_json::Value::Object(obj) => {
             structgen(obj, &name, acc)
                 .expect(&format!(
@@ -72,7 +72,10 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
             file.to_str().unwrap()
         )),
     };
-    Ok(quote::quote!(pub mod #mod_name { #output }))
+
+    output.sort_by(|ts1, ts2| ts1.to_string().cmp(&ts2.to_string()));
+    output.dedup_by(|ts1, ts2| ts1.to_string() == ts2.to_string());
+    Ok(quote::quote!(pub mod #mod_name { #(#output)* }))
 }
 
 fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
@@ -123,12 +126,16 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
 }
 
 fn handle_options_standalones_and_keywords(
+    rename: &mut TokenStream,
     field_name: &mut String,
     atomic_response: &mut bool,
     option: &mut bool,
 ) -> () {
     if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
-        todo!("Field name with reserved keyword: {}", field_name);
+        *rename = format!("#[serde(rename = \"{}\")]", &field_name)
+            .parse()
+            .unwrap();
+        field_name.push_str("_field");
     }
 
     if field_name.starts_with("alsoStandalone<") {
@@ -148,11 +155,12 @@ fn handle_options_standalones_and_keywords(
 fn structgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
     struct_name: &str,
-    mut acc: TokenStream,
-) -> TypegenResult<(Option<special_cases::Case>, TokenStream)> {
+    mut acc: Vec<TokenStream>,
+) -> TypegenResult<(Option<special_cases::Case>, Vec<TokenStream>)> {
     let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
     let mut atomic_response = true;
     let mut chaininfofalse_tokens = TokenStream::new();
+    let mut rename = TokenStream::new();
     // The default collection behind a serde_json_map is a BTreeMap
     // and being the predicate of "in" causes into_iter to be called.
     // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
@@ -166,18 +174,11 @@ fn structgen(
         }
 
         handle_options_standalones_and_keywords(
+            &mut rename,
             &mut field_name,
             &mut atomic_response,
             &mut option,
         );
-        let mut rename = proc_macro2::TokenStream::new();
-
-        if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
-            rename = format!("#[serde(rename = \"{}\")]", &field_name)
-                .parse()
-                .unwrap();
-            field_name.push_str("_field");
-        }
 
         let (mut tokenized_val, temp_acc) =
             tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
@@ -194,8 +195,19 @@ fn structgen(
         }
 
         let token_ident = callsite_ident(&field_name);
-        ident_val_tokens
-            .push(quote!(#rename pub #token_ident: #tokenized_val,));
+        ident_val_tokens.push(quote!(#rename));
+        ident_val_tokens.push(quote!(#token_ident: #tokenized_val,));
+    }
+
+    if atomic_response {
+        ident_val_tokens = ident_val_tokens
+            .into_iter()
+            .map(|ts| match ts.clone().into_iter().next() {
+                None => ts,
+                Some(proc_macro2::TokenTree::Punct(_)) => ts,
+                _ => quote!(pub #ts),
+            })
+            .collect();
     }
 
     let ident = callsite_ident(struct_name);
@@ -217,7 +229,7 @@ fn structgen(
         )
     };
 
-    acc.extend(quote!(
+    acc.push(quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
         #body
     ));
@@ -227,8 +239,8 @@ fn structgen(
 fn alias(
     data: serde_json::Value,
     name: &str,
-    acc: TokenStream,
-) -> TypegenResult<TokenStream> {
+    acc: Vec<TokenStream>,
+) -> TypegenResult<Vec<TokenStream>> {
     let ident = callsite_ident(&name);
     let (type_body, mut acc) = tokenize_value(
         &capitalize_first_char(name.trim_end_matches("Response")),
@@ -238,15 +250,15 @@ fn alias(
     let aliased = quote!(
         pub type #ident = #type_body;
     );
-    acc.extend(aliased);
+    acc.push(aliased);
     Ok(acc)
 }
 
 fn tokenize_value(
     name: &str,
     val: serde_json::Value,
-    acc: TokenStream,
-) -> TypegenResult<(TokenStream, TokenStream)> {
+    acc: Vec<TokenStream>,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     match val {
         serde_json::Value::String(label) => {
             tokenize_terminal(name, label.as_str()).map(|x| (x, acc))
@@ -284,8 +296,8 @@ fn tokenize_terminal(name: &str, label: &str) -> TypegenResult<TokenStream> {
 fn tokenize_array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
-    acc: TokenStream,
-) -> TypegenResult<(TokenStream, TokenStream)> {
+    acc: Vec<TokenStream>,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     let (val, acc) = tokenize_value(
         name,
         array_of.pop().ok_or(error::QuizfaceAnnotationError {
@@ -300,8 +312,8 @@ fn tokenize_array(
 fn tokenize_object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
-    acc: TokenStream,
-) -> TypegenResult<(TokenStream, TokenStream)> {
+    acc: Vec<TokenStream>,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     let ident = callsite_ident(name);
     let (special_case, acc) = structgen(val, name, acc)?;
     if let Some(special_case) = special_case {
@@ -331,7 +343,7 @@ mod unit {
             let quoted_string = tokenize_value(
                 "some_field",
                 serde_json::json!("String"),
-                TokenStream::new(),
+                Vec::new(),
             );
             assert_eq!(
                 quote!(String).to_string(),
@@ -343,7 +355,7 @@ mod unit {
             let quoted_number = tokenize_value(
                 "some_field",
                 serde_json::json!("Decimal"),
-                TokenStream::new(),
+                Vec::new(),
             );
             assert_eq!(
                 quote!(rust_decimal::Decimal).to_string(),
@@ -355,7 +367,7 @@ mod unit {
             let quoted_bool = tokenize_value(
                 "some_field",
                 serde_json::json!("bool"),
-                TokenStream::new(),
+                Vec::new(),
             );
             assert_eq!(
                 quote!(bool).to_string(),
@@ -387,7 +399,7 @@ mod unit {
                         "inner_c": "Decimal",
                     }
                 ),
-                TokenStream::new(),
+                Vec::new(),
             )
             .unwrap();
             assert_eq!(
@@ -395,7 +407,7 @@ mod unit {
                 quoted_object.0.to_string(),
             );
             assert_eq!(
-                quoted_object.1.to_string(),
+                quoted_object.1[0].to_string(),
                 test_consts::SIMPLE_UNNESTED_RESPONSE,
             );
         }
@@ -404,18 +416,18 @@ mod unit {
 
 #[cfg(test)]
 mod test_consts {
-    pub(super) const GETINFO_RESPONSE: &str = "# [derive (Debug , serde :: \
-    Deserialize , serde :: Serialize)] pub struct GetinfoResponse { pub proxy \
-    : Option < String > , pub \
-    balance : rust_decimal :: Decimal , pub blocks : rust_decimal :: Decimal \
-    , pub connections : rust_decimal :: Decimal , pub difficulty : rust_decimal \
-    :: Decimal , pub errors : String , pub keypoololdest : rust_decimal :: \
+    pub(super) const GETINFO_RESPONSE: &str = "pub mod getinfo { # [derive \
+    (Debug , serde :: Deserialize , serde :: Serialize)] pub struct \
+    GetinfoResponse { pub proxy : Option < String > , pub balance : \
+    rust_decimal :: Decimal , pub blocks : rust_decimal :: Decimal , pub \
+    connections : rust_decimal :: Decimal , pub difficulty : rust_decimal :: \
+    Decimal , pub errors : String , pub keypoololdest : rust_decimal :: \
     Decimal , pub keypoolsize : rust_decimal :: Decimal , pub paytxfee : \
     rust_decimal :: Decimal , pub protocolversion : rust_decimal :: Decimal , \
-    pub relayfee : rust_decimal :: Decimal , \
-    pub testnet : bool , pub timeoffset : rust_decimal :: Decimal , pub \
-    unlocked_until : rust_decimal :: Decimal , pub version : rust_decimal :: \
-    Decimal , pub walletversion : rust_decimal :: Decimal , }";
+    pub relayfee : rust_decimal :: Decimal , pub testnet : bool , pub \
+    timeoffset : rust_decimal :: Decimal , pub unlocked_until : rust_decimal \
+    :: Decimal , pub version : rust_decimal :: Decimal , pub walletversion : \
+    rust_decimal :: Decimal , } }";
     pub(super) const SIMPLE_UNNESTED_RESPONSE: &str = "# [derive (Debug , \
     serde :: Deserialize , serde :: Serialize)] pub struct somefield { pub \
     inner_a : String , pub inner_b : bool , pub inner_c : rust_decimal :: \
