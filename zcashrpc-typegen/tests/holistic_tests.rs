@@ -28,6 +28,11 @@ fn alias_vec_of_struct() {
     call_test("vec_struct");
 }
 
+#[test]
+fn code_dedup() {
+    call_test("deduplication");
+}
+
 fn call_test(test_name: &str) {
     let output = std::process::Command::new("cargo")
         .args(&[
