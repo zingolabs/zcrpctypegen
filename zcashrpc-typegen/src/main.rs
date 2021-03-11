@@ -126,15 +126,17 @@ fn callsite_ident(name: &str) -> proc_macro2::Ident {
 }
 
 fn handle_options_standalones_and_keywords(
-    rename: &mut TokenStream,
+    serde_rename: &mut Option<TokenStream>,
     field_name: &mut String,
     atomic_response: &mut bool,
     option: &mut bool,
 ) -> () {
     if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
-        *rename = format!("#[serde(rename = \"{}\")]", &field_name)
-            .parse()
-            .unwrap();
+        *serde_rename = Some(
+            format!("#[serde(rename = \"{}\")]", &field_name)
+                .parse()
+                .unwrap(),
+        );
         field_name.push_str("_field");
     }
 
@@ -152,78 +154,46 @@ fn handle_options_standalones_and_keywords(
         *option = true;
     }
 }
+
 fn structgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
     struct_name: &str,
     mut acc: Vec<TokenStream>,
-) -> TypegenResult<(Option<special_cases::Case>, Vec<TokenStream>)> {
-    let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
-    let mut atomic_response = true;
-    let mut chaininfofalse_tokens = TokenStream::new();
-    let mut rename = TokenStream::new();
-    // The default collection behind a serde_json_map is a BTreeMap
-    // and being the predicate of "in" causes into_iter to be called.
-    // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
-    for (mut field_name, val) in inner_nodes {
-        let mut option = false;
-        dbg!(&field_name);
-        //special case handling
-        if &field_name == "xxxx" {
-            acc = tokenize_value(struct_name, val, acc)?.1; // .0 unused
-            return Ok((Some(special_cases::Case::FourXs), acc));
-        }
-
-        handle_options_standalones_and_keywords(
-            &mut rename,
-            &mut field_name,
-            &mut atomic_response,
-            &mut option,
-        );
-
-        let (mut tokenized_val, temp_acc) =
-            tokenize_value(&capitalize_first_char(&field_name), val, acc)?;
-        acc = temp_acc;
-        if option {
-            use std::str::FromStr as _;
-            tokenized_val =
-                TokenStream::from_str(&format!("Option<{}>", tokenized_val))
-                    .unwrap();
-        }
-
-        if chaininfofalse_tokens.is_empty() {
-            chaininfofalse_tokens = tokenized_val.clone();
-        }
-
-        let token_ident = callsite_ident(&field_name);
-        ident_val_tokens.push(quote!(#rename));
-        ident_val_tokens.push(quote!(#token_ident: #tokenized_val,));
-    }
-
+) -> TypegenResult<(special_cases::Case, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let body = if atomic_response {
-        add_pub_keywords(&mut ident_val_tokens);
-        quote!(
-            pub struct #ident {
-                #(#ident_val_tokens)*
-            }
-        )
-    } else {
-        // getaddressdeltas and getaddressutxos "(or, if chainInfo is true)"
-        quote!(
-            pub enum #ident {
-                ChainInfoFalse(#chaininfofalse_tokens),
-                ChainInfoTrue {
+    let field_data = handle_struct_fields(struct_name, inner_nodes)?;
+    acc.extend(field_data.new_code);
+    let mut ident_val_tokens = field_data.ident_val_tokens;
+    let body = match field_data.case {
+        special_cases::Case::Regular => {
+            add_pub_keywords(&mut ident_val_tokens);
+            quote!(
+                pub struct #ident {
                     #(#ident_val_tokens)*
-                },
-            }
-        )
+                }
+            )
+        }
+        special_cases::Case::AlsoStandaloneEnum(chaininfofalse_tokens) => {
+            // getaddressdeltas and getaddressutxos "(or, if chainInfo is true)"
+            quote!(
+                pub enum #ident {
+                    ChainInfoFalse(#chaininfofalse_tokens),
+                    ChainInfoTrue {
+                        #(#ident_val_tokens)*
+                    },
+                }
+            )
+        }
+        special_cases::Case::FourXs => {
+            return Ok((special_cases::Case::FourXs, acc));
+        }
     };
 
     acc.push(quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
         #body
     ));
-    Ok((None, acc))
+    Ok((special_cases::Case::Regular, acc))
 }
 
 fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
@@ -234,6 +204,67 @@ fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
             _ => quote!(pub #ts),
         })
         .collect();
+}
+
+struct FieldsInfo {
+    case: special_cases::Case,
+    ident_val_tokens: Vec<TokenStream>,
+    new_code: Vec<TokenStream>,
+}
+fn handle_struct_fields(
+    struct_name: &str,
+    inner_nodes: serde_json::Map<String, serde_json::Value>,
+) -> TypegenResult<FieldsInfo> {
+    let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
+    let mut new_code = Vec::new();
+    let mut atomic_response = true;
+    let mut case = special_cases::Case::Regular;
+    for (mut field_name, val) in inner_nodes {
+        dbg!(&field_name);
+        //special case handling
+        if &field_name == "xxxx" {
+            new_code = tokenize_value(struct_name, val, Vec::new())?.1; // .0 unused
+            case = special_cases::Case::FourXs;
+            break;
+        }
+
+        let mut serde_rename = None;
+        let mut option = false;
+        handle_options_standalones_and_keywords(
+            &mut serde_rename,
+            &mut field_name,
+            &mut atomic_response,
+            &mut option,
+        );
+
+        let (mut tokenized_val, temp_acc) =
+            tokenize_value(&capitalize_first_char(&field_name), val, new_code)?;
+        new_code = temp_acc;
+        if option {
+            use std::str::FromStr as _;
+            tokenized_val =
+                TokenStream::from_str(&format!("Option<{}>", tokenized_val))
+                    .unwrap();
+        }
+
+        if atomic_response == false {
+            if let special_cases::Case::AlsoStandaloneEnum(_) = case {
+            } else {
+                case = special_cases::Case::AlsoStandaloneEnum(
+                    tokenized_val.clone(),
+                );
+            }
+        }
+
+        let token_ident = callsite_ident(&field_name);
+        ident_val_tokens.push(quote!(#serde_rename));
+        ident_val_tokens.push(quote!(#token_ident: #tokenized_val,));
+    }
+    Ok(FieldsInfo {
+        case,
+        new_code,
+        ident_val_tokens,
+    })
 }
 
 fn alias(
@@ -315,15 +346,15 @@ fn tokenize_object(
     acc: Vec<TokenStream>,
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     let ident = callsite_ident(name);
-    let (special_case, acc) = structgen(val, name, acc)?;
-    if let Some(special_case) = special_case {
-        match special_case {
-            special_cases::Case::FourXs => {
-                Ok((quote!(std::collections::HashMap<String, #ident>), acc))
-            }
+    let (case, acc) = structgen(val, name, acc)?;
+    match case {
+        special_cases::Case::Regular => Ok((quote!(#ident), acc)),
+        special_cases::Case::FourXs => {
+            Ok((quote!(std::collections::HashMap<String, #ident>), acc))
         }
-    } else {
-        Ok((quote!(#ident), acc))
+        otherwise => {
+            panic!("structgen should not return variant {:?}", otherwise)
+        }
     }
 }
 
