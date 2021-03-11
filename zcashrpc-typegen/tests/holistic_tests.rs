@@ -1,16 +1,31 @@
 #[test]
-fn validate_basic_struct_test_output() {
+fn basic_struct() {
     call_test("basic_struct");
 }
 
 #[test]
-fn validate_quizface_output() {
+fn quizface_getinfo_getblockchaininfo() {
     call_test("quizface_output");
 }
 
 #[test]
-fn validate_standalone_handling() {
+fn standalone_handling() {
     call_test("standalone_handling");
+}
+
+#[test]
+fn simple_terminal_aliases() {
+    call_test("terminal_alias");
+}
+
+#[test]
+fn alias_vec_of_terminal() {
+    call_test("vec_terminal");
+}
+
+#[test]
+fn alias_vec_of_struct() {
+    call_test("vec_struct");
 }
 
 fn call_test(test_name: &str) {
