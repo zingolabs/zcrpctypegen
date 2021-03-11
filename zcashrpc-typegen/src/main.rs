@@ -199,19 +199,9 @@ fn structgen(
         ident_val_tokens.push(quote!(#token_ident: #tokenized_val,));
     }
 
-    if atomic_response {
-        ident_val_tokens = ident_val_tokens
-            .into_iter()
-            .map(|ts| match ts.clone().into_iter().next() {
-                None => ts,
-                Some(proc_macro2::TokenTree::Punct(_)) => ts,
-                _ => quote!(pub #ts),
-            })
-            .collect();
-    }
-
     let ident = callsite_ident(struct_name);
     let body = if atomic_response {
+        add_pub_keywords(&mut ident_val_tokens);
         quote!(
             pub struct #ident {
                 #(#ident_val_tokens)*
@@ -234,6 +224,16 @@ fn structgen(
         #body
     ));
     Ok((None, acc))
+}
+
+fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
+    *tokens = tokens
+        .into_iter()
+        .map(|ts| match ts.clone().into_iter().next() {
+            None | Some(proc_macro2::TokenTree::Punct(_)) => ts.clone(),
+            _ => quote!(pub #ts),
+        })
+        .collect();
 }
 
 fn alias(
