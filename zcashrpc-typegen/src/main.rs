@@ -237,6 +237,8 @@ fn handle_struct_fields(
             &mut option,
         );
 
+        //temp_acc needed because destructuring assignments are unstable
+        //see https://github.com/rust-lang/rust/issues/71126 for more info
         let (mut tokenized_val, temp_acc) =
             tokenize_value(&capitalize_first_char(&field_name), val, new_code)?;
         new_code = temp_acc;
@@ -249,6 +251,7 @@ fn handle_struct_fields(
 
         if atomic_response == false {
             if let special_cases::Case::AlsoStandaloneEnum(_) = case {
+                //noop!
             } else {
                 case = special_cases::Case::AlsoStandaloneEnum(
                     tokenized_val.clone(),
