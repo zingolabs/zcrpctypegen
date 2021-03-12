@@ -1,9 +1,20 @@
+//! In order to leverage all of Rust's type safety, this crate produces
+//! a set of concrete Rust types for responses from the zcashd-RPC interface.
+
 mod error;
 mod special_cases;
 use error::TypegenResult;
+use proc_macro2::TokenStream;
+use quote::quote;
 
+/// Process quizface-formatted response specifications from files, producing
+/// Rust types, in the `rpc_response_types.rs` file.
 fn main() {
-    let mut code = Vec::new();
+    let initial_comment = r#"//procedurally generated response types, note that zcashrpc-typegen
+           //is in early alpha, and output is subject to change at any time.
+"#;
+    use std::io::Write as _;
+    std::fs::write(output_path(), initial_comment).unwrap();
     for filenode in std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
             .nth(1)
@@ -11,214 +22,342 @@ fn main() {
     ))
     .unwrap()
     {
-        code.push(process_response(
+        if let Ok(code) = process_response(
             &filenode.expect("Problem getting direntry!").path(),
-            proc_macro2::TokenStream::new(),
-        ));
+        ) {
+            let mut outfile = std::fs::OpenOptions::new()
+                .append(true)
+                .open(output_path())
+                .unwrap();
+            outfile.write_all(code.to_string().as_bytes()).unwrap();
+            assert!(std::process::Command::new("rustfmt")
+                .arg(output_path())
+                .output()
+                .unwrap()
+                .status
+                .success());
+        } else {
+            todo!("Holy moly something is messed up!");
+        }
     }
-    use std::io::Write as _;
-    std::fs::File::create(output_path())
-        .unwrap()
-        .write(
-            code.into_iter()
-                .collect::<proc_macro2::TokenStream>()
-                .to_string()
-                .as_bytes(),
-        )
-        .unwrap();
-
-    assert!(std::process::Command::new("rustfmt")
-        .arg(output_path().to_string_lossy().to_string())
-        .output()
-        .unwrap()
-        .status
-        .success());
 }
 
-fn process_response(
-    file: &std::path::Path,
-    acc: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
-    let file_body = get_data(&file).expect("Couldn't unpack file!");
-    let name = capitalize_first_char(
-        file.file_name()
-            .unwrap()
-            .to_string_lossy()
-            .strip_suffix(".json")
-            .unwrap(),
-    );
-    match file_body {
+fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
+    let acc = Vec::new();
+    let (name, file_body) = get_data(file);
+    let mod_name = callsite_ident(&match file
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .strip_suffix(".json")
+        .unwrap()
+    {
+        name if special_cases::RESERVED_KEYWORDS.contains(&name) => {
+            format!("{}_mod", name)
+        }
+        name => name.to_string(),
+    });
+    let mut output = match file_body {
         serde_json::Value::Object(obj) => {
-            typegen(obj, &name, acc)
+            structgen(obj, &name, acc)
                 .expect(&format!(
                     "file_body of {} struct failed to match",
-                    file.to_string_lossy()
+                    file.to_str().unwrap()
                 ))
                 .1
         }
         val => alias(val, &name, acc).expect(&format!(
             "file_body of {} alias failed to match",
-            file.to_string_lossy()
+            file.to_str().unwrap()
         )),
-    }
+    };
+
+    output.sort_by(|ts1, ts2| ts1.to_string().cmp(&ts2.to_string()));
+    output.dedup_by(|ts1, ts2| ts1.to_string() == ts2.to_string());
+    Ok(quote::quote!(pub mod #mod_name { #(#output)* }))
 }
 
-fn output_path() -> Box<std::path::Path> {
-    Box::from(std::path::Path::new(
-        &std::env::args().nth(2).unwrap_or("./output.rs".to_string()),
-    ))
+fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
+    let file_body =
+        from_file_deserialize(&file).expect("Couldn't unpack file!");
+    let mut name = capitalize_first_char(
+        file.file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .strip_suffix(".json")
+            .unwrap(),
+    );
+    name.push_str("Response");
+    (name, file_body)
 }
 
-fn get_data(file_path: &std::path::Path) -> TypegenResult<serde_json::Value> {
-    let map_err_io_to_fs = error::FSError::from_io_error(file_path);
-    let mut file = std::fs::File::open(file_path).map_err(&map_err_io_to_fs)?;
+/// This function provides input for the OS interface that we access via
+/// std::process, and std::fs.
+fn output_path() -> std::ffi::OsString {
+    std::ffi::OsString::from(
+        std::env::args()
+            .nth(2)
+            .unwrap_or("./../src/client/rpc_response_types.rs".to_string()),
+    )
+}
+
+/// Handles data access from fs location through deserialization
+fn from_file_deserialize(
+    file_path: &std::path::Path,
+) -> TypegenResult<serde_json::Value> {
+    let from_io_to_fs = error::FSError::from_io_error(file_path);
+    let mut file = std::fs::File::open(file_path).map_err(&from_io_to_fs)?;
     let mut file_body = String::new();
     use std::io::Read as _;
     file.read_to_string(&mut file_body)
-        .map_err(&map_err_io_to_fs)?;
+        .map_err(&from_io_to_fs)?;
     let file_body_json =
         serde_json::de::from_str(&file_body).map_err(|err| {
-            error::InvalidJsonError::from_serde_json_error(err, file_body)
+            error::JsonError::from_serde_json_error(err, file_body)
         })?;
     Ok(file_body_json)
 }
 
-fn typegen(
-    data: serde_json::Map<String, serde_json::Value>,
-    name: &str,
-    mut acc: proc_macro2::TokenStream,
-) -> TypegenResult<(Option<special_cases::Case>, proc_macro2::TokenStream)> {
-    let mut code = Vec::new();
-    // The default collection behind a serde_json_map is a BTreeMap
-    // and being the predicate of "in" causes into_iter to be called.
-    // See: https://docs.serde.rs/src/serde_json/map.rs.html#3
-    for (field_name, val) in data {
+/// Simple wrapper that always generates Idents with "call_site" spans.
+fn callsite_ident(name: &str) -> proc_macro2::Ident {
+    proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
+}
+
+fn handle_options_standalones_and_keywords(
+    serde_rename: &mut Option<TokenStream>,
+    field_name: &mut String,
+    atomic_response: &mut bool,
+    option: &mut bool,
+) -> () {
+    if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
+        *serde_rename = Some(
+            format!("#[serde(rename = \"{}\")]", &field_name)
+                .parse()
+                .unwrap(),
+        );
+        field_name.push_str("_field");
+    }
+
+    if field_name.starts_with("alsoStandalone<") {
+        *field_name = field_name
+            .trim_end_matches(">")
+            .trim_start_matches("alsoStandalone<")
+            .to_string();
+        *atomic_response = false;
+    } else if field_name.starts_with("Option<") {
+        *field_name = field_name
+            .trim_end_matches(">")
+            .trim_start_matches("Option<")
+            .to_string();
+        *option = true;
+    }
+}
+
+fn structgen(
+    inner_nodes: serde_json::Map<String, serde_json::Value>,
+    struct_name: &str,
+    mut acc: Vec<TokenStream>,
+) -> TypegenResult<(special_cases::Case, Vec<TokenStream>)> {
+    let ident = callsite_ident(struct_name);
+    let field_data = handle_struct_fields(struct_name, inner_nodes)?;
+    acc.extend(field_data.new_code);
+    let mut ident_val_tokens = field_data.ident_val_tokens;
+    let body = match field_data.case {
+        special_cases::Case::Regular => {
+            add_pub_keywords(&mut ident_val_tokens);
+            quote!(
+                pub struct #ident {
+                    #(#ident_val_tokens)*
+                }
+            )
+        }
+        special_cases::Case::AlsoStandaloneEnum(chaininfofalse_tokens) => {
+            // getaddressdeltas and getaddressutxos "(or, if chainInfo is true)"
+            quote!(
+                pub enum #ident {
+                    ChainInfoFalse(#chaininfofalse_tokens),
+                    ChainInfoTrue {
+                        #(#ident_val_tokens)*
+                    },
+                }
+            )
+        }
+        special_cases::Case::FourXs => {
+            return Ok((special_cases::Case::FourXs, acc));
+        }
+    };
+
+    acc.push(quote!(
+        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        #body
+    ));
+    Ok((special_cases::Case::Regular, acc))
+}
+
+fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
+    *tokens = tokens
+        .into_iter()
+        .map(|ts| match ts.clone().into_iter().next() {
+            None | Some(proc_macro2::TokenTree::Punct(_)) => ts.clone(),
+            _ => quote!(pub #ts),
+        })
+        .collect();
+}
+
+struct FieldsInfo {
+    case: special_cases::Case,
+    ident_val_tokens: Vec<TokenStream>,
+    new_code: Vec<TokenStream>,
+}
+fn handle_struct_fields(
+    struct_name: &str,
+    inner_nodes: serde_json::Map<String, serde_json::Value>,
+) -> TypegenResult<FieldsInfo> {
+    let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
+    let mut new_code = Vec::new();
+    let mut atomic_response = true;
+    let mut case = special_cases::Case::Regular;
+    for (mut field_name, val) in inner_nodes {
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            acc = quote_value(name, val, acc)?.1; //We ignore the first field
-            return Ok((Some(special_cases::Case::FourXs), acc));
+            new_code = tokenize_value(struct_name, val, Vec::new())?.1; // .0 unused
+            case = special_cases::Case::FourXs;
+            break;
         }
 
-        if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
-            todo!("Field name with reserved keyword: {}", field_name);
-        }
-
-        //println!("Got field: {}, {}", field_name, val);
-        let key = proc_macro2::Ident::new(
-            &field_name,
-            proc_macro2::Span::call_site(),
+        let mut serde_rename = None;
+        let mut option = false;
+        handle_options_standalones_and_keywords(
+            &mut serde_rename,
+            &mut field_name,
+            &mut atomic_response,
+            &mut option,
         );
-        let (val, temp_acc) =
-            quote_value(&capitalize_first_char(&field_name), val, acc)?;
-        acc = temp_acc;
-        let added_code = quote::quote!(pub #key: #val,);
-        code.push(added_code);
-    }
 
-    let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
-    acc.extend(quote::quote!(
-        #[derive(Debug, serde::Deserialize, serde::Serialize)]
-        pub struct #ident {
-            #(#code)*
+        //temp_acc needed because destructuring assignments are unstable
+        //see https://github.com/rust-lang/rust/issues/71126 for more info
+        let (mut tokenized_val, temp_acc) =
+            tokenize_value(&capitalize_first_char(&field_name), val, new_code)?;
+        new_code = temp_acc;
+        if option {
+            use std::str::FromStr as _;
+            tokenized_val =
+                TokenStream::from_str(&format!("Option<{}>", tokenized_val))
+                    .unwrap();
         }
-    ));
-    Ok((None, acc))
+
+        if atomic_response == false {
+            if let special_cases::Case::AlsoStandaloneEnum(_) = case {
+                //noop!
+            } else {
+                case = special_cases::Case::AlsoStandaloneEnum(
+                    tokenized_val.clone(),
+                );
+            }
+        }
+
+        let token_ident = callsite_ident(&field_name);
+        ident_val_tokens.push(quote!(#serde_rename));
+        ident_val_tokens.push(quote!(#token_ident: #tokenized_val,));
+    }
+    Ok(FieldsInfo {
+        case,
+        new_code,
+        ident_val_tokens,
+    })
 }
 
 fn alias(
     data: serde_json::Value,
     name: &str,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<proc_macro2::TokenStream> {
-    if let serde_json::Value::Object(_) = data {
-        unimplemented!("We don't want to create struct aliases.")
-    }
-    let ident = proc_macro2::Ident::new(&name, proc_macro2::Span::call_site());
-    let (type_body, mut acc) =
-        quote_value(&capitalize_first_char(name), data, acc)?;
-    let aliased = quote::quote!(
+    acc: Vec<TokenStream>,
+) -> TypegenResult<Vec<TokenStream>> {
+    let ident = callsite_ident(&name);
+    let (type_body, mut acc) = tokenize_value(
+        &capitalize_first_char(name.trim_end_matches("Response")),
+        data,
+        acc,
+    )?;
+    let aliased = quote!(
         pub type #ident = #type_body;
     );
-    acc.extend(aliased);
+    acc.push(aliased);
     Ok(acc)
 }
 
-fn quote_value(
+fn tokenize_value(
     name: &str,
     val: serde_json::Value,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+    acc: Vec<TokenStream>,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     match val {
-        serde_json::Value::String(kind) => {
-            quote_terminal(name, kind.as_str(), acc)
+        serde_json::Value::String(label) => {
+            tokenize_terminal(name, label.as_str()).map(|x| (x, acc))
         }
-        serde_json::Value::Array(vec) => quote_array(name, vec, acc),
-        serde_json::Value::Object(obj) => quote_object(name, obj, acc),
-        otherwise => Err(error::InvalidAnnotationError {
+        serde_json::Value::Array(vec) => tokenize_array(name, vec, acc),
+        serde_json::Value::Object(obj) => tokenize_object(name, obj, acc),
+        otherwise => Err(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::from(otherwise),
             location: name.to_string(),
         })?,
     }
 }
 
-fn quote_terminal(
-    name: &str,
-    val: &str,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
-    Ok((
-        match val {
-            //Todo: Make this better than manual option variants
-            "Decimal" => quote::quote!(rust_decimal::Decimal),
-            "Option<Decimal>" => quote::quote!(Option<rust_decimal::Decimal>),
-            "bool" => quote::quote!(bool),
-            "Option<bool>" => quote::quote!(Option<bool>),
-            "String" => quote::quote!(String),
-            "Option<String>" => quote::quote!(Option<String>),
-            otherwise => Err(error::InvalidAnnotationError {
+fn tokenize_terminal(name: &str, label: &str) -> TypegenResult<TokenStream> {
+    Ok(match label {
+        "Decimal" => quote!(rust_decimal::Decimal),
+        "bool" => quote!(bool),
+        "String" => quote!(String),
+        "hexadecimal" => quote!(String),
+        "INSUFFICIENT" => quote!(compile_error!(
+            "Insufficient zcash-cli help output to autogenerate type"
+        )),
+        otherwise => {
+            return Err(error::QuizfaceAnnotationError {
                 kind: error::InvalidAnnotationKind::from(
                     serde_json::Value::String(otherwise.to_string()),
                 ),
                 location: name.to_string(),
-            })?,
-        },
-        acc,
-    ))
+            }
+            .into())
+        }
+    })
 }
 
-fn quote_array(
+fn tokenize_array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
-    let (val, acc) = quote_value(
+    acc: Vec<TokenStream>,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
+    let (val, acc) = tokenize_value(
         name,
-        array_of.pop().ok_or(error::InvalidAnnotationError {
+        array_of.pop().ok_or(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::EmptyArray,
             location: name.to_string(),
         })?,
         acc,
     )?;
-    Ok((quote::quote!(Vec<#val>), acc))
+    Ok((quote!(Vec<#val>), acc))
 }
 
-fn quote_object(
+fn tokenize_object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
-    acc: proc_macro2::TokenStream,
-) -> TypegenResult<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
-    let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
-    let (special_case, acc) = typegen(val, name, acc)?;
-    if let Some(special_case) = special_case {
-        match special_case {
-            special_cases::Case::FourXs => Ok((
-                quote::quote!(std::collections::HashMap<String, #ident>),
-                acc,
-            )),
+    acc: Vec<TokenStream>,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
+    let ident = callsite_ident(name);
+    let (case, acc) = structgen(val, name, acc)?;
+    match case {
+        special_cases::Case::Regular => Ok((quote!(#ident), acc)),
+        special_cases::Case::FourXs => {
+            Ok((quote!(std::collections::HashMap<String, #ident>), acc))
         }
-    } else {
-        Ok((quote::quote!(#ident), acc))
+        otherwise => {
+            panic!("structgen should not return variant {:?}", otherwise)
+        }
     }
 }
 
@@ -234,51 +373,39 @@ mod unit {
     mod atomic {
         use crate::*;
         #[test]
-        fn quote_value_string() {
-            let quoted_string = quote_value(
+        fn tokenize_value_string() {
+            let quoted_string = tokenize_value(
                 "some_field",
                 serde_json::json!("String"),
-                proc_macro2::TokenStream::new(),
+                Vec::new(),
             );
             assert_eq!(
-                quote::quote!(String).to_string(),
+                quote!(String).to_string(),
                 quoted_string.unwrap().0.to_string(),
             );
         }
         #[test]
-        fn quote_value_number() {
-            let quoted_number = quote_value(
+        fn tokenize_value_number() {
+            let quoted_number = tokenize_value(
                 "some_field",
                 serde_json::json!("Decimal"),
-                proc_macro2::TokenStream::new(),
+                Vec::new(),
             );
             assert_eq!(
-                quote::quote!(rust_decimal::Decimal).to_string(),
+                quote!(rust_decimal::Decimal).to_string(),
                 quoted_number.unwrap().0.to_string(),
             );
         }
         #[test]
-        fn quote_value_bool() {
-            let quoted_bool = quote_value(
+        fn tokenize_value_bool() {
+            let quoted_bool = tokenize_value(
                 "some_field",
                 serde_json::json!("bool"),
-                proc_macro2::TokenStream::new(),
+                Vec::new(),
             );
             assert_eq!(
-                quote::quote!(bool).to_string(),
+                quote!(bool).to_string(),
                 quoted_bool.unwrap().0.to_string(),
-            );
-        }
-        #[test]
-        fn quote_value_optional_string() {
-            let quoted_string = quote_value(
-                "some_field",
-                serde_json::json!("Option<String>"),
-                proc_macro2::TokenStream::new(),
-            );
-            assert_eq!(
-                quote::quote!(Option<String>).to_string(),
-                quoted_string.unwrap().0.to_string(),
             );
         }
     }
@@ -289,13 +416,15 @@ mod unit {
             let getinfo_path = std::path::Path::new(
                 "./test_data/quizface_output/getinfo.json",
             );
-            let output =
-                process_response(getinfo_path, proc_macro2::TokenStream::new());
-            assert_eq!(output.to_string(), test_consts::GETINFO_RESPONSE);
+            let output = process_response(getinfo_path);
+            assert_eq!(
+                output.unwrap().to_string(),
+                test_consts::GETINFO_RESPONSE
+            );
         }
         #[test]
-        fn quote_object_simple_unnested() {
-            let quoted_object = quote_value(
+        fn tokenize_object_simple_unnested() {
+            let quoted_object = tokenize_value(
                 "somefield",
                 serde_json::json!(
                     {
@@ -304,15 +433,15 @@ mod unit {
                         "inner_c": "Decimal",
                     }
                 ),
-                proc_macro2::TokenStream::new(),
+                Vec::new(),
             )
             .unwrap();
             assert_eq!(
-                quote::quote!(somefield).to_string(),
+                quote!(somefield).to_string(),
                 quoted_object.0.to_string(),
             );
             assert_eq!(
-                quoted_object.1.to_string(),
+                quoted_object.1[0].to_string(),
                 test_consts::SIMPLE_UNNESTED_RESPONSE,
             );
         }
@@ -321,17 +450,18 @@ mod unit {
 
 #[cfg(test)]
 mod test_consts {
-    pub(super) const GETINFO_RESPONSE: &str = "# [derive (Debug , serde :: \
-    Deserialize , serde :: Serialize)] pub struct Getinfo { pub balance : \
+    pub(super) const GETINFO_RESPONSE: &str = "pub mod getinfo { # [derive \
+    (Debug , serde :: Deserialize , serde :: Serialize)] pub struct \
+    GetinfoResponse { pub proxy : Option < String > , pub balance : \
     rust_decimal :: Decimal , pub blocks : rust_decimal :: Decimal , pub \
     connections : rust_decimal :: Decimal , pub difficulty : rust_decimal :: \
     Decimal , pub errors : String , pub keypoololdest : rust_decimal :: \
     Decimal , pub keypoolsize : rust_decimal :: Decimal , pub paytxfee : \
     rust_decimal :: Decimal , pub protocolversion : rust_decimal :: Decimal , \
-    pub proxy : Option < String > , pub relayfee : rust_decimal :: Decimal , \
-    pub testnet : bool , pub timeoffset : rust_decimal :: Decimal , pub \
-    unlocked_until : rust_decimal :: Decimal , pub version : rust_decimal :: \
-    Decimal , pub walletversion : rust_decimal :: Decimal , }";
+    pub relayfee : rust_decimal :: Decimal , pub testnet : bool , pub \
+    timeoffset : rust_decimal :: Decimal , pub unlocked_until : rust_decimal \
+    :: Decimal , pub version : rust_decimal :: Decimal , pub walletversion : \
+    rust_decimal :: Decimal , } }";
     pub(super) const SIMPLE_UNNESTED_RESPONSE: &str = "# [derive (Debug , \
     serde :: Deserialize , serde :: Serialize)] pub struct somefield { pub \
     inner_a : String , pub inner_b : bool , pub inner_c : rust_decimal :: \

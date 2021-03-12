@@ -1,6 +1,9 @@
 //This mod is really really small right now, but I expect it to grow rapidly
+#[derive(Debug)]
 pub(crate) enum Case {
+    Regular,
     FourXs,
+    AlsoStandaloneEnum(proc_macro2::TokenStream),
 }
 
 pub(crate) const RESERVED_KEYWORDS: &[&str] = &[
