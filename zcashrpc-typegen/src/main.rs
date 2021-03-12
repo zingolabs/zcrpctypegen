@@ -296,7 +296,7 @@ fn handle_fields(
         dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            new_code = tokenize_value(struct_name, val, Vec::new())?.1; // .0 unused
+            new_code = tokenize_value(struct_name, val, Vec::new(), false)?.1; // .0 unused
             case = special_cases::Case::FourXs;
             break;
         }
@@ -312,8 +312,12 @@ fn handle_fields(
 
         //temp_acc needed because destructuring assignments are unstable
         //see https://github.com/rust-lang/rust/issues/71126 for more info
-        let (mut tokenized_val, temp_acc) =
-            tokenize_value(&capitalize_first_char(&field_name), val, new_code)?;
+        let (mut tokenized_val, temp_acc, _terminal_enum) = tokenize_value(
+            &capitalize_first_char(&field_name),
+            val,
+            new_code,
+            false,
+        )?;
         new_code = temp_acc;
         if option {
             use std::str::FromStr as _;
@@ -343,21 +347,61 @@ fn handle_fields(
     })
 }
 
+fn handle_terminal_enum(
+    label: &str,
+    name: &str,
+    called_by_alias: bool,
+) -> TokenStream {
+    let variants = label
+        .strip_prefix("enum:")
+        .unwrap()
+        .split(',')
+        .map(|x| x.trim());
+    let variant_idents = variants
+        .clone()
+        .map(|x| {
+            proc_macro2::TokenTree::Ident(callsite_ident(
+                &x.split('-')
+                    .map(capitalize_first_char)
+                    .collect::<Vec<String>>()
+                    .join("_"),
+            ))
+            .into()
+        })
+        .collect::<Vec<TokenStream>>();
+    let variant_idents_renames = variants
+        .map(|x| format!("#[serde(rename = \"{}\")]", x).parse().unwrap())
+        .collect::<Vec<TokenStream>>();
+    let name_tokens = callsite_ident(&if called_by_alias {
+        format!("{}Response", name)
+    } else {
+        name.to_string()
+    });
+    quote!(
+        pub enum #name_tokens {
+            #(#variant_idents_renames #variant_idents,)*
+        }
+    )
+}
+
 fn alias(
     data: serde_json::Value,
     name: &str,
     acc: Vec<TokenStream>,
 ) -> TypegenResult<Vec<TokenStream>> {
     let ident = callsite_ident(&name);
-    let (type_body, mut acc) = tokenize_value(
+    let (type_body, mut acc, terminal_enum) = tokenize_value(
         &capitalize_first_char(name.trim_end_matches("Response")),
         data,
         acc,
+        true,
     )?;
-    let aliased = quote!(
-        pub type #ident = #type_body;
-    );
-    acc.push(aliased);
+    if !terminal_enum {
+        let aliased = quote!(
+            pub type #ident = #type_body;
+        );
+        acc.push(aliased);
+    }
     Ok(acc)
 }
 
@@ -365,13 +409,18 @@ fn tokenize_value(
     name: &str,
     val: serde_json::Value,
     acc: Vec<TokenStream>,
-) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
+    called_by_alias: bool,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>, bool)> {
     match val {
         serde_json::Value::String(label) => {
-            tokenize_terminal(name, label.as_str()).map(|x| (x, acc))
+            tokenize_terminal(name, label.as_str(), acc, called_by_alias)
         }
-        serde_json::Value::Array(vec) => tokenize_array(name, vec, acc),
-        serde_json::Value::Object(obj) => tokenize_object(name, obj, acc),
+        serde_json::Value::Array(vec) => {
+            tokenize_array(name, vec, acc).map(|x| (x.0, x.1, false))
+        }
+        serde_json::Value::Object(obj) => {
+            tokenize_object(name, obj, acc).map(|x| (x.0, x.1, false))
+        }
         otherwise => Err(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::from(otherwise),
             location: name.to_string(),
@@ -379,25 +428,43 @@ fn tokenize_value(
     }
 }
 
-fn tokenize_terminal(name: &str, label: &str) -> TypegenResult<TokenStream> {
-    Ok(match label {
-        "Decimal" => quote!(rust_decimal::Decimal),
-        "bool" => quote!(bool),
-        "String" => quote!(String),
-        "hexadecimal" => quote!(String),
-        "INSUFFICIENT" => quote!(compile_error!(
-            "Insufficient zcash-cli help output to autogenerate type"
-        )),
-        otherwise => {
-            return Err(error::QuizfaceAnnotationError {
-                kind: error::InvalidAnnotationKind::from(
-                    serde_json::Value::String(otherwise.to_string()),
-                ),
-                location: name.to_string(),
+fn tokenize_terminal(
+    name: &str,
+    label: &str,
+    mut acc: Vec<TokenStream>,
+    called_by_alias: bool,
+) -> TypegenResult<(TokenStream, Vec<TokenStream>, bool)> {
+    Ok((
+        match label {
+            "Decimal" => quote!(rust_decimal::Decimal),
+            "bool" => quote!(bool),
+            "String" => quote!(String),
+            "hexadecimal" => quote!(String),
+            "INSUFFICIENT" => quote!(compile_error!(
+                "Insufficient zcash-cli help output to autogenerate type"
+            )),
+            enumeration if enumeration.starts_with("enum:") => {
+                let ident = callsite_ident(name);
+                acc.push(handle_terminal_enum(
+                    enumeration,
+                    name,
+                    called_by_alias,
+                ));
+                return Ok((quote!(#ident), acc, true));
             }
-            .into())
-        }
-    })
+            otherwise => {
+                return Err(error::QuizfaceAnnotationError {
+                    kind: error::InvalidAnnotationKind::from(
+                        serde_json::Value::String(otherwise.to_string()),
+                    ),
+                    location: name.to_string(),
+                }
+                .into())
+            }
+        },
+        acc,
+        false,
+    ))
 }
 
 fn tokenize_array(
@@ -405,13 +472,14 @@ fn tokenize_array(
     mut array_of: Vec<serde_json::Value>,
     acc: Vec<TokenStream>,
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
-    let (val, acc) = tokenize_value(
+    let (val, acc, _terminal_enum) = tokenize_value(
         name,
         array_of.pop().ok_or(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::EmptyArray,
             location: name.to_string(),
         })?,
         acc,
+        false,
     )?;
     Ok((quote!(Vec<#val>), acc))
 }
