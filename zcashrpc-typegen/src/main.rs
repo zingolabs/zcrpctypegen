@@ -59,18 +59,27 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
         name => name.to_string(),
     });
     let mut output = match file_body {
-        serde_json::Value::Object(obj) => {
-            structgen(obj, &name, acc)
-                .expect(&format!(
-                    "file_body of {} struct failed to match",
+        serde_json::Value::Object(map) => match map.len() {
+            0 => panic!("received empty array in {}!", name),
+            1 => match map.into_iter().next().unwrap() {
+                (_, serde_json::Value::Object(obj)) => {
+                    structgen(obj, &name, acc)
+                        .expect(&format!(
+                            "file_body of {} struct failed to match",
+                            file.to_str().unwrap()
+                        ))
+                        .1
+                }
+                (_, val) => alias(val, &name, acc).expect(&format!(
+                    "file_body of {} alias failed to match",
                     file.to_str().unwrap()
-                ))
-                .1
+                )),
+            },
+            _ => enumgen(map, &name, acc)?,
+        },
+        non_array => {
+            panic!("Received {}, expected array", non_array.to_string())
         }
-        val => alias(val, &name, acc).expect(&format!(
-            "file_body of {} alias failed to match",
-            file.to_str().unwrap()
-        )),
     };
 
     output.sort_by(|ts1, ts2| ts1.to_string().cmp(&ts2.to_string()));
@@ -155,13 +164,63 @@ fn handle_options_standalones_and_keywords(
     }
 }
 
+fn enumgen(
+    inner_nodes: serde_json::Map<String, serde_json::Value>,
+    enum_name: &str,
+    mut acc: Vec<TokenStream>,
+) -> TypegenResult<Vec<TokenStream>> {
+    let ident = callsite_ident(enum_name);
+    let enum_code: Vec<TokenStream> = inner_nodes
+        .into_iter()
+        .map(|(variant_name, value)| {
+            let variant_name = capitalize_first_char(&variant_name);
+            let variant_name_tokens = callsite_ident(&variant_name);
+            match value {
+                serde_json::Value::Object(obj) => {
+                    let field_data = handle_fields(enum_name, obj)?;
+                    acc.extend(field_data.new_code);
+                    match field_data.case {
+                        special_cases::Case::Regular => {
+                            let variant_body_tokens =
+                                field_data.ident_val_tokens;
+                            Ok(quote!(
+                                #variant_name_tokens {
+                                    #(#variant_body_tokens)*
+                                },
+                            ))
+                        }
+                        other_case => unimplemented!(
+                            "Hit special case {:?} in enumgen",
+                            other_case
+                        ),
+                    }
+                }
+                non_object => {
+                    dbg!(&non_object);
+                    let (variant_body_tokens, new_acc) =
+                        tokenize_value(&variant_name, non_object, acc.clone())?;
+                    acc = new_acc;
+                    Ok(quote!(#variant_name_tokens(#variant_body_tokens)))
+                }
+            }
+        })
+        .collect::<TypegenResult<Vec<TokenStream>>>()?;
+    acc.push(quote!(
+            #[derive(Debug, serde::Deserialize, serde::Serialize)]
+            pub enum #ident {
+                #(#enum_code)*
+            }
+    ));
+    Ok(acc)
+}
+
 fn structgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
     struct_name: &str,
     mut acc: Vec<TokenStream>,
 ) -> TypegenResult<(special_cases::Case, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let field_data = handle_struct_fields(struct_name, inner_nodes)?;
+    let field_data = handle_fields(struct_name, inner_nodes)?;
     acc.extend(field_data.new_code);
     let mut ident_val_tokens = field_data.ident_val_tokens;
     let body = match field_data.case {
@@ -211,7 +270,7 @@ struct FieldsInfo {
     ident_val_tokens: Vec<TokenStream>,
     new_code: Vec<TokenStream>,
 }
-fn handle_struct_fields(
+fn handle_fields(
     struct_name: &str,
     inner_nodes: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<FieldsInfo> {
