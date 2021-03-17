@@ -1,37 +1,22 @@
-#[test]
-fn basic_struct() {
-    call_test("basic_struct");
+macro_rules! make_tests {
+    ($($test_name:ident),+) => {
+        $(
+            #[test]
+            fn $test_name() {
+                call_test(stringify!($test_name));
+            }
+        )+
+    }
 }
 
-#[test]
-fn quizface_getinfo_getblockchaininfo() {
-    call_test("quizface_output");
-}
-
-#[test]
-fn standalone_handling() {
-    call_test("standalone_handling");
-}
-
-#[test]
-fn simple_terminal_aliases() {
-    call_test("terminal_alias");
-}
-
-#[test]
-fn alias_vec_of_terminal() {
-    call_test("vec_terminal");
-}
-
-#[test]
-fn alias_vec_of_struct() {
-    call_test("vec_struct");
-}
-
-#[test]
-fn code_dedup() {
-    call_test("deduplication");
-}
+make_tests!(
+    basic_struct,
+    quizface_output,
+    terminal_alias,
+    vec_terminal,
+    vec_struct,
+    deduplication
+);
 
 fn call_test(test_name: &str) {
     let output = std::process::Command::new("cargo")
