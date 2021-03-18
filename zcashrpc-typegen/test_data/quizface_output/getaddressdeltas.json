@@ -1,5 +1,5 @@
-{
-    "chaininfotrue":{
+[
+    {
         "deltas":[{
             "address":"String",
             "height":"Decimal",
@@ -16,11 +16,11 @@
             "height":"Decimal"
         }
     },
-    "default":[{
+    [{
         "address":"String",
         "height":"Decimal",
         "index":"Decimal",
         "satoshis":"Decimal",
         "txid":"String"
     }]
-}
+]

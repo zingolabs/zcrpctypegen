@@ -59,10 +59,10 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
         name => name.to_string(),
     });
     let mut output = match file_body {
-        serde_json::Value::Object(map) => match map.len() {
+        serde_json::Value::Array(vec) => match vec.len() {
             0 => panic!("received empty array in {}!", name),
-            1 => match map.into_iter().next().unwrap() {
-                (_, serde_json::Value::Object(obj)) => {
+            1 => match vec.into_iter().next().unwrap() {
+                serde_json::Value::Object(obj) => {
                     structgen(obj, &name, acc)
                         .expect(&format!(
                             "file_body of {} struct failed to match",
@@ -70,12 +70,12 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
                         ))
                         .1
                 }
-                (_, val) => alias(val, &name, acc).expect(&format!(
+                val => alias(val, &name, acc).expect(&format!(
                     "file_body of {} alias failed to match",
                     file.to_str().unwrap()
                 )),
             },
-            _ => enumgen(map, &name, acc)?,
+            _ => enumgen(vec, &name, acc)?,
         },
         non_array => {
             panic!("Received {}, expected array", non_array.to_string())
@@ -86,6 +86,8 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
     output.dedup_by(|ts1, ts2| ts1.to_string() == ts2.to_string());
     Ok(quote::quote!(pub mod #mod_name { #(#output)* }))
 }
+
+const VARIANT_NAMES: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
 
 fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
     let file_body =
@@ -165,16 +167,18 @@ fn handle_options_standalones_and_keywords(
 }
 
 fn enumgen(
-    inner_nodes: serde_json::Map<String, serde_json::Value>,
+    inner_nodes: Vec<serde_json::Value>,
     //This one layer out from the map that's passed to structgen!
     //Don't let the identical type signatures fool you.
     enum_name: &str,
     mut acc: Vec<TokenStream>,
 ) -> TypegenResult<Vec<TokenStream>> {
+    assert!(inner_nodes.len() <= VARIANT_NAMES.len());
     let ident = callsite_ident(enum_name);
     let enum_code: Vec<TokenStream> = inner_nodes
         .into_iter()
-        .map(|(variant_name, value)| {
+        .zip(VARIANT_NAMES.iter())
+        .map(|(value, variant_name)| {
             let variant_name = capitalize_first_char(&variant_name);
             let variant_name_tokens = callsite_ident(&variant_name);
             match value {
