@@ -166,6 +166,8 @@ fn handle_options_standalones_and_keywords(
 
 fn enumgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
+    //This one layer out from the map that's passed to structgen!
+    //Don't let the identical type signatures fool you.
     enum_name: &str,
     mut acc: Vec<TokenStream>,
 ) -> TypegenResult<Vec<TokenStream>> {

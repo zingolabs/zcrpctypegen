@@ -73,3 +73,40 @@ pub mod getinfo {
         pub walletversion: rust_decimal::Decimal,
     }
 }
+pub mod getaddressdeltas {
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub enum GetaddressdeltasResponse {
+        Chaininfotrue {
+            deltas: Vec<Deltas>,
+            end: End,
+            start: Start,
+        },
+        Default(Vec<Default>),
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct Default {
+        pub address: String,
+        pub height: rust_decimal::Decimal,
+        pub index: rust_decimal::Decimal,
+        pub satoshis: rust_decimal::Decimal,
+        pub txid: String,
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct Deltas {
+        pub address: String,
+        pub height: rust_decimal::Decimal,
+        pub index: rust_decimal::Decimal,
+        pub satoshis: rust_decimal::Decimal,
+        pub txid: String,
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct End {
+        pub hash: String,
+        pub height: rust_decimal::Decimal,
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct Start {
+        pub hash: String,
+        pub height: rust_decimal::Decimal,
+    }
+}
