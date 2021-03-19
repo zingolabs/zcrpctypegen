@@ -76,12 +76,12 @@ pub mod getinfo {
 pub mod getaddressdeltas {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum GetaddressdeltasResponse {
-        Regular {
+        Regular(Vec<Regular>),
+        Verbose {
             deltas: Vec<Deltas>,
             end: End,
             start: Start,
         },
-        Verbose(Vec<Verbose>),
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Deltas {
@@ -97,16 +97,16 @@ pub mod getaddressdeltas {
         pub height: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Start {
-        pub hash: String,
-        pub height: rust_decimal::Decimal,
-    }
-    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Verbose {
+    pub struct Regular {
         pub address: String,
         pub height: rust_decimal::Decimal,
         pub index: rust_decimal::Decimal,
         pub satoshis: rust_decimal::Decimal,
         pub txid: String,
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct Start {
+        pub hash: String,
+        pub height: rust_decimal::Decimal,
     }
 }

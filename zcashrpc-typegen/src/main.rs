@@ -190,10 +190,9 @@ fn enumgen(
                             let variant_body_tokens =
                                 field_data.ident_val_tokens;
                             Ok(quote!(
-                                #variant_name_tokens {
-                                    #(#variant_body_tokens)*
-                                },
-                            ))
+                            #variant_name_tokens {
+                                #(#variant_body_tokens)*
+                            }))
                         }
                         other_case => unimplemented!(
                             "Hit special case {:?} in enumgen",
@@ -206,7 +205,7 @@ fn enumgen(
                     let (variant_body_tokens, new_acc) =
                         tokenize_value(&variant_name, non_object, acc.clone())?;
                     acc = new_acc;
-                    Ok(quote!(#variant_name_tokens(#variant_body_tokens)))
+                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
                 }
             }
         })
