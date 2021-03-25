@@ -60,7 +60,7 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
     });
     let mut output = match file_body {
         serde_json::Value::Array(vec) => match vec.len() {
-            0 => panic!("received empty array in {}!", name),
+            0 => emptygen(&name, acc),
             1 => match vec.into_iter().next().unwrap() {
                 serde_json::Value::Object(obj) => {
                     structgen(obj, &name, acc)
@@ -258,6 +258,15 @@ fn structgen(
         #body
     ));
     Ok((special_cases::Case::Regular, acc))
+}
+
+fn emptygen(struct_name: &str, mut acc: Vec<TokenStream>) -> Vec<TokenStream> {
+    let ident = callsite_ident(struct_name);
+    acc.push(quote!(
+        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        pub struct #ident;
+    ));
+    acc
 }
 
 fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
