@@ -93,9 +93,13 @@ mod unit {
         let _iak = InvalidAnnotationKind::Null;
         let expected_err =
             QuizfaceAnnotationError::from((_iak, "foo".to_string()));
-        let err =
-            crate::tokenize_value("foo", serde_json::Value::Null, Vec::new())
-                .unwrap_err();
+        let err = crate::tokenize_value(
+            "foo",
+            serde_json::Value::Null,
+            Vec::new(),
+            false,
+        )
+        .unwrap_err();
         assert_eq!(TypegenError::Annotation(expected_err), err);
     }
     #[test]

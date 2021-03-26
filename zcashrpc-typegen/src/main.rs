@@ -15,16 +15,19 @@ fn main() {
 "#;
     use std::io::Write as _;
     std::fs::write(output_path(), initial_comment).unwrap();
-    for filenode in std::fs::read_dir(&std::path::Path::new(
+    let mut iter = std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
             .nth(1)
             .unwrap_or("./example_dir".to_string()),
     ))
     .unwrap()
-    {
-        if let Ok(code) = process_response(
-            &filenode.expect("Problem getting direntry!").path(),
-        ) {
+    .map(Result::unwrap)
+    .collect::<Vec<std::fs::DirEntry>>();
+    iter.sort_unstable_by(|file_node1, file_node2| {
+        file_node1.path().cmp(&file_node2.path())
+    });
+    for filenode in iter {
+        if let Ok(code) = process_response(&filenode.path()) {
             let mut outfile = std::fs::OpenOptions::new()
                 .append(true)
                 .open(output_path())
@@ -522,6 +525,7 @@ mod unit {
                 "some_field",
                 serde_json::json!("String"),
                 Vec::new(),
+                false,
             );
             assert_eq!(
                 quote!(String).to_string(),
@@ -534,6 +538,7 @@ mod unit {
                 "some_field",
                 serde_json::json!("Decimal"),
                 Vec::new(),
+                false,
             );
             assert_eq!(
                 quote!(rust_decimal::Decimal).to_string(),
@@ -546,6 +551,7 @@ mod unit {
                 "some_field",
                 serde_json::json!("bool"),
                 Vec::new(),
+                false,
             );
             assert_eq!(
                 quote!(bool).to_string(),
@@ -578,6 +584,7 @@ mod unit {
                     }
                 ),
                 Vec::new(),
+                false,
             )
             .unwrap();
             assert_eq!(
