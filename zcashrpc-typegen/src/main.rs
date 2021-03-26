@@ -380,6 +380,7 @@ fn handle_terminal_enum(
         name.to_string()
     });
     quote!(
+        #[derive(Debug, serde::Deserialize, serde::Serialize)]
         pub enum #name_tokens {
             #(#variant_idents_renames #variant_idents,)*
         }
