@@ -19,4 +19,4 @@ jobs:
       run: git clone https://github.com/zingolabs/quizface.git 
 
     - name: Run Tests
-      run:  docker run  -v /home/runner/work/zcashrpc/zcashrpc:/zcashrpc ghcr.io/zingolabs/zcashrpc:latest bash -c "./zcash/src/zcashd -daemon && cd zcashrpc && cargo test && cd ../quizface && cat lists/passing.txt | xargs cargo run && cd ../zcashrpc/zcashrpc-typegen && cargo test && cargo run ../../quizface/output/v4.3.0_0.1.1"
+      run:  docker run  -v /home/runner/work/zcashrpc/zcashrpc:/zcashrpc -v /home/runner/work/zcashrpc/quizface:/quizface ghcr.io/zingolabs/zcashrpc:latest bash -c "./zcash/src/zcashd -daemon && cd zcashrpc && cargo test && cd ../quizface && cat lists/passing.txt | xargs cargo run && cd ../zcashrpc/zcashrpc-typegen && cargo test && cargo run ../../quizface/output/v4.3.0_0.1.1"
