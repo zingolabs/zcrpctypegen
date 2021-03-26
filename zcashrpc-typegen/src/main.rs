@@ -202,8 +202,13 @@ fn enumgen(
                 }
                 non_object => {
                     dbg!(&non_object);
-                    let (variant_body_tokens, new_acc) =
-                        tokenize_value(&variant_name, non_object, acc.clone())?;
+                    let (variant_body_tokens, new_acc, _terminal_enum) =
+                        tokenize_value(
+                            &variant_name,
+                            non_object,
+                            acc.clone(),
+                            false,
+                        )?;
                     acc = new_acc;
                     Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
                 }
@@ -353,7 +358,7 @@ fn handle_terminal_enum(
     called_by_alias: bool,
 ) -> TokenStream {
     let variants = label
-        .strip_prefix("enum:")
+        .strip_prefix("ENUM:")
         .unwrap()
         .split(',')
         .map(|x| x.trim());
@@ -361,10 +366,7 @@ fn handle_terminal_enum(
         .clone()
         .map(|x| {
             proc_macro2::TokenTree::Ident(callsite_ident(
-                &x.split('-')
-                    .map(capitalize_first_char)
-                    .collect::<Vec<String>>()
-                    .join("_"),
+                &x.split('-').map(capitalize_first_char).collect::<String>(),
             ))
             .into()
         })
@@ -443,7 +445,7 @@ fn tokenize_terminal(
             "INSUFFICIENT" => quote!(compile_error!(
                 "Insufficient zcash-cli help output to autogenerate type"
             )),
-            enumeration if enumeration.starts_with("enum:") => {
+            enumeration if enumeration.starts_with("ENUM:") => {
                 let ident = callsite_ident(name);
                 acc.push(handle_terminal_enum(
                     enumeration,
