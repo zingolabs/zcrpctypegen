@@ -192,7 +192,7 @@ fn enumgen(
                             Ok(quote!(
                             #variant_name_tokens {
                                 #(#variant_body_tokens)*
-                            }))
+                            },))
                         }
                         other_case => unimplemented!(
                             "Hit special case {:?} in enumgen",
