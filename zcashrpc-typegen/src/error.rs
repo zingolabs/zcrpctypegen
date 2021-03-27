@@ -90,9 +90,10 @@ mod unit {
     }
     #[test]
     fn test_invalid_annotation() {
-        let _iak = InvalidAnnotationKind::Null;
-        let expected_err =
-            QuizfaceAnnotationError::from((_iak, "foo".to_string()));
+        let expected_err = QuizfaceAnnotationError::from((
+            InvalidAnnotationKind::Null,
+            "foo".to_string(),
+        ));
         let err = crate::tokenize_value(
             "foo",
             serde_json::Value::Null,
