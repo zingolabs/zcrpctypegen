@@ -1,14 +1,4 @@
 # ZcashrpcTypegen
 
-ZcashrpcTypegen is an application.
-
-## Getting Started
-
-This application is authored using [Abscissa], a Rust application framework.
-
-For more information, see:
-
-[Documentation]
-
-[Abscissa]: https://github.com/iqlusioninc/abscissa
-[Documentation]: https://docs.rs/abscissa_core/
+This crate is used to generate Rust types from quizface-generated
+interpretations of zcashd-RPC help messages.
