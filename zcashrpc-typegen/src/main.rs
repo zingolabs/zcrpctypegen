@@ -119,13 +119,21 @@ fn output_path() -> std::ffi::OsString {
         .collect::<Vec<OsString>>()
         .pop()
         .expect("Can't retrieve input dir name.");
-    std::ffi::OsString::from(std::env::args().nth(2).unwrap_or(format!(
+    let outstring = format!(
         "./output/{}_{}/rpc_response_types.rs",
         in_version
             .into_string()
             .expect("Couldn't get String from OsString."),
         TYPEGEN_VERSION
-    )))
+    );
+    let outpath = std::path::Path::new(&outstring);
+    std::fs::create_dir_all(outpath.parent().expect("Couldn't create parent."))
+        .expect("Couldn't create outdir.");
+    std::ffi::OsString::from(
+        std::env::args()
+            .nth(2)
+            .unwrap_or(outpath.to_str().unwrap().into()),
+    )
 }
 
 /// Handles data access from fs location through deserialization
