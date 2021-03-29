@@ -63,9 +63,9 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
         name => name.to_string(),
     });
     let mut output = match file_body {
-        serde_json::Value::Array(vec) => match vec.len() {
+        serde_json::Value::Array(mut vec) => match vec.len() {
             0 => emptygen(&name, acc),
-            1 => match vec.into_iter().next().unwrap() {
+            1 => match vec.pop().unwrap() {
                 serde_json::Value::Object(obj) => {
                     structgen(obj, &name, acc)
                         .expect(&format!(
@@ -210,7 +210,6 @@ fn enumgen(
                             &variant_name,
                             non_object,
                             acc.clone(),
-                            false,
                         )?;
                     acc = new_acc;
                     Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
@@ -303,7 +302,7 @@ fn handle_fields(
     for (mut field_name, val) in inner_nodes {
         //special case handling
         if &field_name == "xxxx" {
-            new_code = tokenize::value(struct_name, val, Vec::new(), false)?.1; // .0 unused
+            new_code = tokenize::value(struct_name, val, Vec::new())?.1; // .0 unused
             case = special_cases::Case::FourXs;
             break;
         }
@@ -323,7 +322,6 @@ fn handle_fields(
             &capitalize_first_char(&field_name),
             val,
             new_code,
-            false,
         )?;
         new_code = temp_acc;
         if option {
@@ -364,7 +362,6 @@ fn alias(
         &capitalize_first_char(name.trim_end_matches("Response")),
         data,
         acc,
-        true,
     )?;
     if !terminal_enum {
         let aliased = quote!(
@@ -392,7 +389,6 @@ mod unit {
                 "some_field",
                 serde_json::json!("String"),
                 Vec::new(),
-                false,
             );
             assert_eq!(
                 quote!(String).to_string(),
@@ -405,7 +401,6 @@ mod unit {
                 "some_field",
                 serde_json::json!("Decimal"),
                 Vec::new(),
-                false,
             );
             assert_eq!(
                 quote!(rust_decimal::Decimal).to_string(),
@@ -418,7 +413,6 @@ mod unit {
                 "some_field",
                 serde_json::json!("bool"),
                 Vec::new(),
-                false,
             );
             assert_eq!(
                 quote!(bool).to_string(),
@@ -451,7 +445,6 @@ mod unit {
                     }
                 ),
                 Vec::new(),
-                false,
             )
             .unwrap();
             assert_eq!(

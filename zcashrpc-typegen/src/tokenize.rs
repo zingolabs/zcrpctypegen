@@ -4,11 +4,7 @@ use error::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-fn handle_terminal_enum(
-    label: &str,
-    name: &str,
-    called_by_alias: bool,
-) -> TokenStream {
+fn handle_terminal_enum(label: &str, name: &str) -> TokenStream {
     let variants = label
         .strip_prefix("ENUM:")
         .unwrap()
@@ -28,13 +24,7 @@ fn handle_terminal_enum(
     let variant_idents_renames = variants
         .map(|x| format!("#[serde(rename = \"{}\")]", x).parse().unwrap())
         .collect::<Vec<TokenStream>>();
-    let name_tokens = crate::callsite_ident(
-        &(if called_by_alias {
-            format!("{}Response", name)
-        } else {
-            name.to_string()
-        }),
-    );
+    let name_tokens = crate::callsite_ident(&format!("{}Response", name));
     quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
         pub enum #name_tokens {
@@ -47,12 +37,9 @@ pub(crate) fn value(
     name: &str,
     val: serde_json::Value,
     acc: Vec<TokenStream>,
-    called_by_alias: bool,
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>, bool)> {
     match val {
-        serde_json::Value::String(label) => {
-            terminal(name, label.as_str(), acc, called_by_alias)
-        }
+        serde_json::Value::String(label) => terminal(name, label.as_str(), acc),
         serde_json::Value::Array(vec) => {
             array(name, vec, acc).map(|x| (x.0, x.1, false))
         }
@@ -70,7 +57,6 @@ fn terminal(
     name: &str,
     label: &str,
     mut acc: Vec<TokenStream>,
-    called_by_alias: bool,
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>, bool)> {
     Ok((
         match label {
@@ -83,11 +69,7 @@ fn terminal(
             )),
             enumeration if enumeration.starts_with("ENUM:") => {
                 let ident = crate::callsite_ident(name);
-                acc.push(handle_terminal_enum(
-                    enumeration,
-                    name,
-                    called_by_alias,
-                ));
+                acc.push(handle_terminal_enum(enumeration, name));
                 return Ok((quote!(#ident), acc, true));
             }
             otherwise => {
@@ -117,7 +99,6 @@ fn array(
             location: name.to_string(),
         })?,
         acc,
-        false,
     )?;
     Ok((quote!(Vec<#val>), acc))
 }
