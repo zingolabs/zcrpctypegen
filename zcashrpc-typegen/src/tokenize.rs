@@ -1,4 +1,3 @@
-
 use crate::error;
 use crate::special_cases;
 use error::TypegenResult;
@@ -70,7 +69,7 @@ pub(crate) fn value(
     }
 }
 
-pub(crate) fn terminal(
+fn terminal(
     name: &str,
     label: &str,
     mut acc: Vec<TokenStream>,
@@ -109,7 +108,7 @@ pub(crate) fn terminal(
     ))
 }
 
-pub(crate) fn array(
+fn array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
     acc: Vec<TokenStream>,
@@ -126,7 +125,7 @@ pub(crate) fn array(
     Ok((quote!(Vec<#val>), acc))
 }
 
-pub(crate) fn object(
+fn object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
     acc: Vec<TokenStream>,
