@@ -110,12 +110,22 @@ fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
 
 /// This function provides input for the OS interface that we access via
 /// std::process, and std::fs.
+const TYPEGEN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 fn output_path() -> std::ffi::OsString {
-    std::ffi::OsString::from(
-        std::env::args()
-            .nth(2)
-            .unwrap_or("./../src/client/rpc_response_types.rs".to_string()),
-    )
+    use std::ffi::OsString;
+    let in_version = std::fs::read_dir("../../quizface/output/")
+        .expect("Missing interpretations.")
+        .map(|x| x.unwrap().file_name())
+        .collect::<Vec<OsString>>()
+        .pop()
+        .expect("Can't retrieve input dir name.");
+    std::ffi::OsString::from(std::env::args().nth(2).unwrap_or(format!(
+        "./output/{}_{}/rpc_response_types.rs",
+        in_version
+            .into_string()
+            .expect("Couldn't get String from OsString."),
+        TYPEGEN_VERSION
+    )))
 }
 
 /// Handles data access from fs location through deserialization
