@@ -94,7 +94,7 @@ mod unit {
             InvalidAnnotationKind::Null,
             "foo".to_string(),
         ));
-        let err = crate::tokenize_value(
+        let err = crate::tokenize::value(
             "foo",
             serde_json::Value::Null,
             Vec::new(),
