@@ -3,6 +3,7 @@
 
 mod error;
 mod special_cases;
+mod tokenize;
 use error::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -15,16 +16,19 @@ fn main() {
 "#;
     use std::io::Write as _;
     std::fs::write(output_path(), initial_comment).unwrap();
-    for filenode in std::fs::read_dir(&std::path::Path::new(
+    let mut iter = std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
             .nth(1)
             .unwrap_or("./example_dir".to_string()),
     ))
     .unwrap()
-    {
-        if let Ok(code) = process_response(
-            &filenode.expect("Problem getting direntry!").path(),
-        ) {
+    .map(Result::unwrap)
+    .collect::<Vec<std::fs::DirEntry>>();
+    iter.sort_unstable_by(|file_node1, file_node2| {
+        file_node1.path().cmp(&file_node2.path())
+    });
+    for filenode in iter {
+        if let Ok(code) = process_response(&filenode.path()) {
             let mut outfile = std::fs::OpenOptions::new()
                 .append(true)
                 .open(output_path())
@@ -59,24 +63,35 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
         name => name.to_string(),
     });
     let mut output = match file_body {
-        serde_json::Value::Object(obj) => {
-            structgen(obj, &name, acc)
-                .expect(&format!(
-                    "file_body of {} struct failed to match",
+        serde_json::Value::Array(mut vec) => match vec.len() {
+            0 => emptygen(&name, acc),
+            1 => match vec.pop().unwrap() {
+                serde_json::Value::Object(obj) => {
+                    structgen(obj, &name, acc)
+                        .expect(&format!(
+                            "file_body of {} struct failed to match",
+                            file.to_str().unwrap()
+                        ))
+                        .1
+                }
+                val => alias(val, &name, acc).expect(&format!(
+                    "file_body of {} alias failed to match",
                     file.to_str().unwrap()
-                ))
-                .1
+                )),
+            },
+            _ => enumgen(vec, &name, acc)?,
+        },
+        non_array => {
+            panic!("Received {}, expected array", non_array.to_string())
         }
-        val => alias(val, &name, acc).expect(&format!(
-            "file_body of {} alias failed to match",
-            file.to_str().unwrap()
-        )),
     };
 
     output.sort_by(|ts1, ts2| ts1.to_string().cmp(&ts2.to_string()));
     output.dedup_by(|ts1, ts2| ts1.to_string() == ts2.to_string());
     Ok(quote::quote!(pub mod #mod_name { #(#output)* }))
 }
+
+const VARIANT_NAMES: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
 
 fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
     let file_body =
@@ -155,13 +170,69 @@ fn handle_options_standalones_and_keywords(
     }
 }
 
+fn enumgen(
+    inner_nodes: Vec<serde_json::Value>,
+    //This one layer out from the map that's passed to structgen!
+    //Don't let the identical type signatures fool you.
+    enum_name: &str,
+    mut acc: Vec<TokenStream>,
+) -> TypegenResult<Vec<TokenStream>> {
+    assert!(inner_nodes.len() <= VARIANT_NAMES.len());
+    let ident = callsite_ident(enum_name);
+    let enum_code: Vec<TokenStream> = inner_nodes
+        .into_iter()
+        .zip(VARIANT_NAMES.iter())
+        .map(|(value, variant_name)| {
+            let variant_name = capitalize_first_char(&variant_name);
+            let variant_name_tokens = callsite_ident(&variant_name);
+            match value {
+                serde_json::Value::Object(obj) => {
+                    let field_data = handle_fields(enum_name, obj)?;
+                    acc.extend(field_data.new_code);
+                    match field_data.case {
+                        special_cases::Case::Regular => {
+                            let variant_body_tokens =
+                                field_data.ident_val_tokens;
+                            Ok(quote!(
+                            #variant_name_tokens {
+                                #(#variant_body_tokens)*
+                            },))
+                        }
+                        other_case => unimplemented!(
+                            "Hit special case {:?} in enumgen",
+                            other_case
+                        ),
+                    }
+                }
+                non_object => {
+                    let (variant_body_tokens, new_acc, _terminal_enum) =
+                        tokenize::value(
+                            &variant_name,
+                            non_object,
+                            acc.clone(),
+                        )?;
+                    acc = new_acc;
+                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
+                }
+            }
+        })
+        .collect::<TypegenResult<Vec<TokenStream>>>()?;
+    acc.push(quote!(
+            #[derive(Debug, serde::Deserialize, serde::Serialize)]
+            pub enum #ident {
+                #(#enum_code)*
+            }
+    ));
+    Ok(acc)
+}
+
 fn structgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
     struct_name: &str,
     mut acc: Vec<TokenStream>,
 ) -> TypegenResult<(special_cases::Case, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let field_data = handle_struct_fields(struct_name, inner_nodes)?;
+    let field_data = handle_fields(struct_name, inner_nodes)?;
     acc.extend(field_data.new_code);
     let mut ident_val_tokens = field_data.ident_val_tokens;
     let body = match field_data.case {
@@ -196,6 +267,15 @@ fn structgen(
     Ok((special_cases::Case::Regular, acc))
 }
 
+fn emptygen(struct_name: &str, mut acc: Vec<TokenStream>) -> Vec<TokenStream> {
+    let ident = callsite_ident(struct_name);
+    acc.push(quote!(
+        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        pub struct #ident;
+    ));
+    acc
+}
+
 fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
     *tokens = tokens
         .into_iter()
@@ -211,7 +291,7 @@ struct FieldsInfo {
     ident_val_tokens: Vec<TokenStream>,
     new_code: Vec<TokenStream>,
 }
-fn handle_struct_fields(
+fn handle_fields(
     struct_name: &str,
     inner_nodes: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<FieldsInfo> {
@@ -220,10 +300,9 @@ fn handle_struct_fields(
     let mut atomic_response = true;
     let mut case = special_cases::Case::Regular;
     for (mut field_name, val) in inner_nodes {
-        dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
-            new_code = tokenize_value(struct_name, val, Vec::new())?.1; // .0 unused
+            new_code = tokenize::value(struct_name, val, Vec::new())?.1; // .0 unused
             case = special_cases::Case::FourXs;
             break;
         }
@@ -239,8 +318,11 @@ fn handle_struct_fields(
 
         //temp_acc needed because destructuring assignments are unstable
         //see https://github.com/rust-lang/rust/issues/71126 for more info
-        let (mut tokenized_val, temp_acc) =
-            tokenize_value(&capitalize_first_char(&field_name), val, new_code)?;
+        let (mut tokenized_val, temp_acc, _terminal_enum) = tokenize::value(
+            &capitalize_first_char(&field_name),
+            val,
+            new_code,
+        )?;
         new_code = temp_acc;
         if option {
             use std::str::FromStr as _;
@@ -276,89 +358,18 @@ fn alias(
     acc: Vec<TokenStream>,
 ) -> TypegenResult<Vec<TokenStream>> {
     let ident = callsite_ident(&name);
-    let (type_body, mut acc) = tokenize_value(
+    let (type_body, mut acc, terminal_enum) = tokenize::value(
         &capitalize_first_char(name.trim_end_matches("Response")),
         data,
         acc,
     )?;
-    let aliased = quote!(
-        pub type #ident = #type_body;
-    );
-    acc.push(aliased);
+    if !terminal_enum {
+        let aliased = quote!(
+            pub type #ident = #type_body;
+        );
+        acc.push(aliased);
+    }
     Ok(acc)
-}
-
-fn tokenize_value(
-    name: &str,
-    val: serde_json::Value,
-    acc: Vec<TokenStream>,
-) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
-    match val {
-        serde_json::Value::String(label) => {
-            tokenize_terminal(name, label.as_str()).map(|x| (x, acc))
-        }
-        serde_json::Value::Array(vec) => tokenize_array(name, vec, acc),
-        serde_json::Value::Object(obj) => tokenize_object(name, obj, acc),
-        otherwise => Err(error::QuizfaceAnnotationError {
-            kind: error::InvalidAnnotationKind::from(otherwise),
-            location: name.to_string(),
-        })?,
-    }
-}
-
-fn tokenize_terminal(name: &str, label: &str) -> TypegenResult<TokenStream> {
-    Ok(match label {
-        "Decimal" => quote!(rust_decimal::Decimal),
-        "bool" => quote!(bool),
-        "String" => quote!(String),
-        "hexadecimal" => quote!(String),
-        "INSUFFICIENT" => quote!(compile_error!(
-            "Insufficient zcash-cli help output to autogenerate type"
-        )),
-        otherwise => {
-            return Err(error::QuizfaceAnnotationError {
-                kind: error::InvalidAnnotationKind::from(
-                    serde_json::Value::String(otherwise.to_string()),
-                ),
-                location: name.to_string(),
-            }
-            .into())
-        }
-    })
-}
-
-fn tokenize_array(
-    name: &str,
-    mut array_of: Vec<serde_json::Value>,
-    acc: Vec<TokenStream>,
-) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
-    let (val, acc) = tokenize_value(
-        name,
-        array_of.pop().ok_or(error::QuizfaceAnnotationError {
-            kind: error::InvalidAnnotationKind::EmptyArray,
-            location: name.to_string(),
-        })?,
-        acc,
-    )?;
-    Ok((quote!(Vec<#val>), acc))
-}
-
-fn tokenize_object(
-    name: &str,
-    val: serde_json::Map<String, serde_json::Value>,
-    acc: Vec<TokenStream>,
-) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
-    let ident = callsite_ident(name);
-    let (case, acc) = structgen(val, name, acc)?;
-    match case {
-        special_cases::Case::Regular => Ok((quote!(#ident), acc)),
-        special_cases::Case::FourXs => {
-            Ok((quote!(std::collections::HashMap<String, #ident>), acc))
-        }
-        otherwise => {
-            panic!("structgen should not return variant {:?}", otherwise)
-        }
-    }
 }
 
 fn capitalize_first_char(input: &str) -> String {
@@ -374,7 +385,7 @@ mod unit {
         use crate::*;
         #[test]
         fn tokenize_value_string() {
-            let quoted_string = tokenize_value(
+            let quoted_string = tokenize::value(
                 "some_field",
                 serde_json::json!("String"),
                 Vec::new(),
@@ -386,7 +397,7 @@ mod unit {
         }
         #[test]
         fn tokenize_value_number() {
-            let quoted_number = tokenize_value(
+            let quoted_number = tokenize::value(
                 "some_field",
                 serde_json::json!("Decimal"),
                 Vec::new(),
@@ -398,7 +409,7 @@ mod unit {
         }
         #[test]
         fn tokenize_value_bool() {
-            let quoted_bool = tokenize_value(
+            let quoted_bool = tokenize::value(
                 "some_field",
                 serde_json::json!("bool"),
                 Vec::new(),
@@ -424,7 +435,7 @@ mod unit {
         }
         #[test]
         fn tokenize_object_simple_unnested() {
-            let quoted_object = tokenize_value(
+            let quoted_object = tokenize::value(
                 "somefield",
                 serde_json::json!(
                     {
