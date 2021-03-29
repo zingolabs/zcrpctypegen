@@ -28,15 +28,12 @@ fn handle_terminal_enum(
     let variant_idents_renames = variants
         .map(|x| format!("#[serde(rename = \"{}\")]", x).parse().unwrap())
         .collect::<Vec<TokenStream>>();
-    #[rustfmt::skip]
-    let name_tokens = crate::callsite_ident( 
-        &(
-            if called_by_alias {
-                format!("{}Response", name)
-            } else {
-                name.to_string()
-            }
-        )
+    let name_tokens = crate::callsite_ident(
+        &(if called_by_alias {
+            format!("{}Response", name)
+        } else {
+            name.to_string()
+        }),
     );
     quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
