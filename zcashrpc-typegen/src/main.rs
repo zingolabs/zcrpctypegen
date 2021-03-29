@@ -204,7 +204,6 @@ fn enumgen(
                     }
                 }
                 non_object => {
-                    dbg!(&non_object);
                     let (variant_body_tokens, new_acc, _terminal_enum) =
                         tokenize_value(
                             &variant_name,
@@ -301,7 +300,6 @@ fn handle_fields(
     let mut atomic_response = true;
     let mut case = special_cases::Case::Regular;
     for (mut field_name, val) in inner_nodes {
-        dbg!(&field_name);
         //special case handling
         if &field_name == "xxxx" {
             new_code = tokenize_value(struct_name, val, Vec::new(), false)?.1; // .0 unused
@@ -377,11 +375,16 @@ fn handle_terminal_enum(
     let variant_idents_renames = variants
         .map(|x| format!("#[serde(rename = \"{}\")]", x).parse().unwrap())
         .collect::<Vec<TokenStream>>();
-    let name_tokens = callsite_ident(&if called_by_alias {
-        format!("{}Response", name)
-    } else {
-        name.to_string()
-    });
+    #[rustfmt::skip]
+    let name_tokens = callsite_ident( 
+        &(
+            if called_by_alias {
+                format!("{}Response", name)
+            } else {
+                name.to_string()
+            }
+        )
+    );
     quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
         pub enum #name_tokens {
