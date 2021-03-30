@@ -12,8 +12,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Pull image
+    - name: Pull Image
       run: docker pull ghcr.io/zingolabs/zcashrpc:latest
 
+    - name: Clone Quizface
+      run: cd .. && git clone https://github.com/zingolabs/quizface.git 
+
     - name: Run Tests
-      run:  docker run  -v /home/runner/work/zcashrpc/zcashrpc:/zcashrpc ghcr.io/zingolabs/zcashrpc:latest bash -c "./zcash/src/zcashd -daemon && cd zcashrpc && cargo test"
+      run:  docker run  -v /home/runner/work/zcashrpc/zcashrpc:/zcashrpc -v /home/runner/work/zcashrpc/quizface:/quizface ghcr.io/zingolabs/zcashrpc:latest bash -c "./zcash/src/zcashd -daemon && cd zcashrpc && cargo test --all && cd zcashrpc-typegen && cargo run ../../quizface/output/v4.3.0_0.2.0"
