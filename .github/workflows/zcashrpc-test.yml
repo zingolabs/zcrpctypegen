@@ -31,7 +31,7 @@ jobs:
        && cd zcashrpc
        && cargo test --all
        && cd ../quizface
-       && cat lists/passing.txt | xargs cargo run
+       && cat lists/passing.txt | \
+       PATH=$PATH:../../zcash/src xargs cargo run
        && cd ../zcashrpc/zcashrpc-typegen
-       && PATH=$PATH:../../zcash/src \
-       cargo run ../../quizface/output/v4.3.0_0.2.0"
+       && cargo run ../../quizface/output/v4.3.0_0.2.0"
