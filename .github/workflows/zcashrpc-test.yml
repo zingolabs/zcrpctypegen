@@ -25,13 +25,12 @@ jobs:
        -v /home/runner/work/zcashrpc/quizface:/quizface
        ghcr.io/zingolabs/zcashrpc:latest
        bash -c "which cargo
-       && export PATH=$PATH:./zcash/src/
        && echo $PATH
        && which cargo
-       && zcashd -daemon
+       && ./zcash/src/zcashd -daemon
        && cd zcashrpc
        && cargo test --all
        && cd ../quizface
        && cat lists/passing.txt | xargs cargo run
        && cd ../zcashrpc/zcashrpc-typegen
-       && cargo run ../../quizface/output/v4.3.0_0.2.0"
+       && PATH:$PATH:../../zcash/src cargo run ../../quizface/output/v4.3.0_0.2.0"
