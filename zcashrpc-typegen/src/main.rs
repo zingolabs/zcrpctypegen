@@ -52,22 +52,39 @@ fn main() {
     }
 }
 
+fn under_to_camel(name: &str) -> String {
+    name.split('_').map(|x| capitalize_first_char(x)).collect()
+}
+
+fn camel_to_under(name: &str) -> String {
+    name.chars()
+        .fold(vec![String::new()], |mut v, c| {
+            if c.is_ascii_uppercase() {
+                v.push(c.to_ascii_lowercase().to_string());
+                v
+            } else {
+                let end = v.len() - 1;
+                v[end].push(c);
+                v
+            }
+        })
+        .into_iter()
+        .skip_while(String::is_empty)
+        .collect::<Vec<String>>()
+        .join("_")
+}
+
 fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
     let acc = Vec::new();
-    let (name, file_body) = get_data(file);
-    let mod_name = callsite_ident(&match file
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .strip_suffix(".json")
-        .unwrap()
+    let (file_name, file_body) = get_data(file);
+    let mod_name = callsite_ident(&if special_cases::RESERVED_KEYWORDS
+        .contains(&file_name.as_ref())
     {
-        name if special_cases::RESERVED_KEYWORDS.contains(&name) => {
-            format!("{}_mod", name)
-        }
-        name => name.to_string(),
+        format!("{}_mod", &file_name)
+    } else {
+        file_name.clone()
     });
+    let name = [under_to_camel(&file_name), "Response".to_string()].concat();
     let mut output = match file_body {
         serde_json::Value::Array(mut vec) => match vec.len() {
             0 => emptygen(&name, acc),
@@ -94,16 +111,16 @@ const VARIANT_NAMES: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
 fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
     let file_body =
         from_file_deserialize(&file).expect("Couldn't unpack file!");
-    let mut name = capitalize_first_char(
+    (
         file.file_name()
             .unwrap()
             .to_str()
             .unwrap()
             .strip_suffix(".json")
-            .unwrap(),
-    );
-    name.push_str("Response");
-    (name, file_body)
+            .unwrap()
+            .to_string(),
+        file_body,
+    )
 }
 
 /// This function provides input for the OS interface that we access via
@@ -331,14 +348,12 @@ fn handle_fields(
             &mut atomic_response,
             &mut option,
         );
+        field_name = camel_to_under(&field_name);
 
         //temp_acc needed because destructuring assignments are unstable
         //see https://github.com/rust-lang/rust/issues/71126 for more info
-        let (mut tokenized_val, temp_acc, _terminal_enum) = tokenize::value(
-            &capitalize_first_char(&field_name),
-            val,
-            new_code,
-        )?;
+        let (mut tokenized_val, temp_acc, _terminal_enum) =
+            tokenize::value(&under_to_camel(&field_name), val, new_code)?;
         new_code = temp_acc;
         if option {
             use std::str::FromStr as _;

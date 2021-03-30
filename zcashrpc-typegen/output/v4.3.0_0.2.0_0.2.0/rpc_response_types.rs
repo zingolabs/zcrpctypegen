@@ -18,7 +18,7 @@ pub mod createmultisig {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct CreatemultisigResponse {
         pub address: String,
-        pub redeemScript: String,
+        pub redeem_script: String,
     }
 }
 pub mod createrawtransaction {
@@ -43,7 +43,7 @@ pub mod decoderawtransaction {
         pub addresses: Vec<String>,
         pub asm: String,
         pub hex: String,
-        pub reqSigs: rust_decimal::Decimal,
+        pub req_sigs: rust_decimal::Decimal,
         #[serde(rename = "type")]
         pub type_field: String,
     }
@@ -54,7 +54,7 @@ pub mod decoderawtransaction {
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Vin {
-        pub scriptSig: ScriptSig,
+        pub script_sig: ScriptSig,
         pub sequence: rust_decimal::Decimal,
         pub txid: String,
         pub vout: rust_decimal::Decimal,
@@ -66,16 +66,16 @@ pub mod decoderawtransaction {
         pub commitments: Vec<String>,
         pub macs: Vec<String>,
         pub nullifiers: Vec<String>,
-        pub onetimePubKey: String,
+        pub onetime_pub_key: String,
         pub proof: String,
-        pub randomSeed: String,
+        pub random_seed: String,
         pub vpub_new: rust_decimal::Decimal,
         pub vpub_old: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Vout {
         pub n: rust_decimal::Decimal,
-        pub scriptPubKey: ScriptPubKey,
+        pub script_pub_key: ScriptPubKey,
         pub value: rust_decimal::Decimal,
     }
 }
@@ -86,7 +86,7 @@ pub mod decodescript {
         pub asm: String,
         pub hex: String,
         pub p2sh: String,
-        pub reqSigs: rust_decimal::Decimal,
+        pub req_sigs: rust_decimal::Decimal,
         #[serde(rename = "type")]
         pub type_field: String,
     }
@@ -219,7 +219,7 @@ pub mod getaddressutxos {
     pub struct Regular {
         pub address: String,
         pub height: rust_decimal::Decimal,
-        pub outputIndex: rust_decimal::Decimal,
+        pub output_index: rust_decimal::Decimal,
         pub satoshis: rust_decimal::Decimal,
         pub script: String,
         pub txid: String,
@@ -228,7 +228,7 @@ pub mod getaddressutxos {
     pub struct Utxos {
         pub address: String,
         pub height: rust_decimal::Decimal,
-        pub outputIndex: rust_decimal::Decimal,
+        pub output_index: rust_decimal::Decimal,
         pub satoshis: rust_decimal::Decimal,
         pub script: String,
         pub txid: String,
@@ -282,7 +282,7 @@ pub mod getblock {
         pub addresses: Vec<String>,
         pub asm: String,
         pub hex: String,
-        pub reqSigs: rust_decimal::Decimal,
+        pub req_sigs: rust_decimal::Decimal,
         #[serde(rename = "type")]
         pub type_field: String,
     }
@@ -310,7 +310,7 @@ pub mod getblock {
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Vin {
-        pub scriptSig: ScriptSig,
+        pub script_sig: ScriptSig,
         pub sequence: rust_decimal::Decimal,
         pub txid: String,
         pub vout: rust_decimal::Decimal,
@@ -322,16 +322,16 @@ pub mod getblock {
         pub commitments: Vec<String>,
         pub macs: Vec<String>,
         pub nullifiers: Vec<String>,
-        pub onetimePubKey: String,
+        pub onetime_pub_key: String,
         pub proof: String,
-        pub randomSeed: String,
+        pub random_seed: String,
         pub vpub_new: rust_decimal::Decimal,
         pub vpub_old: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Vout {
         pub n: rust_decimal::Decimal,
-        pub scriptPubKey: ScriptPubKey,
+        pub script_pub_key: ScriptPubKey,
         pub value: rust_decimal::Decimal,
     }
 }
@@ -464,7 +464,7 @@ pub mod getblocksubsidy {
         pub recipient: String,
         pub specification: String,
         pub value: rust_decimal::Decimal,
-        pub valueZat: rust_decimal::Decimal,
+        pub value_zat: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct GetblocksubsidyResponse {
@@ -694,7 +694,7 @@ pub mod getrawtransaction {
         pub addresses: Vec<String>,
         pub asm: String,
         pub hex: String,
-        pub reqSigs: rust_decimal::Decimal,
+        pub req_sigs: rust_decimal::Decimal,
         #[serde(rename = "type")]
         pub type_field: String,
     }
@@ -705,7 +705,7 @@ pub mod getrawtransaction {
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Vin {
-        pub scriptSig: ScriptSig,
+        pub script_sig: ScriptSig,
         pub sequence: rust_decimal::Decimal,
         pub txid: String,
         pub vout: rust_decimal::Decimal,
@@ -717,16 +717,16 @@ pub mod getrawtransaction {
         pub commitments: Vec<String>,
         pub macs: Vec<String>,
         pub nullifiers: Vec<String>,
-        pub onetimePubKey: String,
+        pub onetime_pub_key: String,
         pub proof: String,
-        pub randomSeed: String,
+        pub random_seed: String,
         pub vpub_new: rust_decimal::Decimal,
         pub vpub_old: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Vout {
         pub n: rust_decimal::Decimal,
-        pub scriptPubKey: ScriptPubKey,
+        pub script_pub_key: ScriptPubKey,
         pub value: rust_decimal::Decimal,
     }
 }
@@ -749,14 +749,14 @@ pub mod gettransaction {
         pub account: String,
         pub address: String,
         pub amount: rust_decimal::Decimal,
-        pub amountZat: rust_decimal::Decimal,
+        pub amount_zat: rust_decimal::Decimal,
         pub category: String,
         pub vout: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct GettransactionResponse {
         pub amount: rust_decimal::Decimal,
-        pub amountZat: rust_decimal::Decimal,
+        pub amount_zat: rust_decimal::Decimal,
         pub blockhash: String,
         pub blockindex: rust_decimal::Decimal,
         pub blocktime: rust_decimal::Decimal,
@@ -785,7 +785,7 @@ pub mod gettxout {
         pub bestblock: String,
         pub coinbase: bool,
         pub confirmations: rust_decimal::Decimal,
-        pub scriptPubKey: ScriptPubKey,
+        pub script_pub_key: ScriptPubKey,
         pub value: rust_decimal::Decimal,
         pub version: rust_decimal::Decimal,
     }
@@ -794,7 +794,7 @@ pub mod gettxout {
         pub addresses: Vec<String>,
         pub asm: String,
         pub hex: String,
-        pub reqSigs: rust_decimal::Decimal,
+        pub req_sigs: rust_decimal::Decimal,
         #[serde(rename = "type")]
         pub type_field: String,
     }
@@ -883,9 +883,9 @@ pub mod listreceivedbyaccount {
     pub struct Listreceivedbyaccount {
         pub account: String,
         pub amount: rust_decimal::Decimal,
-        pub amountZat: rust_decimal::Decimal,
+        pub amount_zat: rust_decimal::Decimal,
         pub confirmations: rust_decimal::Decimal,
-        pub involvesWatchonly: bool,
+        pub involves_watchonly: bool,
     }
     pub type ListreceivedbyaccountResponse = Vec<Listreceivedbyaccount>;
 }
@@ -895,9 +895,9 @@ pub mod listreceivedbyaddress {
         pub account: String,
         pub address: String,
         pub amount: rust_decimal::Decimal,
-        pub amountZat: rust_decimal::Decimal,
+        pub amount_zat: rust_decimal::Decimal,
         pub confirmations: rust_decimal::Decimal,
-        pub involvesWatchonly: bool,
+        pub involves_watchonly: bool,
     }
     pub type ListreceivedbyaddressResponse = Vec<Listreceivedbyaddress>;
 }
@@ -914,7 +914,7 @@ pub mod listtransactions {
         pub account: String,
         pub address: String,
         pub amount: rust_decimal::Decimal,
-        pub amountZat: rust_decimal::Decimal,
+        pub amount_zat: rust_decimal::Decimal,
         pub blockhash: String,
         pub blockindex: rust_decimal::Decimal,
         pub category: String,
@@ -937,11 +937,11 @@ pub mod listunspent {
         pub account: String,
         pub address: String,
         pub amount: rust_decimal::Decimal,
-        pub amountZat: rust_decimal::Decimal,
+        pub amount_zat: rust_decimal::Decimal,
         pub confirmations: rust_decimal::Decimal,
         pub generated: bool,
-        pub redeemScript: String,
-        pub scriptPubKey: String,
+        pub redeem_script: String,
+        pub script_pub_key: String,
         pub spendable: bool,
         pub txid: String,
         pub vout: rust_decimal::Decimal,
@@ -999,7 +999,7 @@ pub mod signrawtransaction {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Errors {
         pub error: String,
-        pub scriptSig: String,
+        pub script_sig: String,
         pub sequence: rust_decimal::Decimal,
         pub txid: String,
         pub vout: rust_decimal::Decimal,
@@ -1040,7 +1040,7 @@ pub mod validateaddress {
         pub isscript: bool,
         pub isvalid: bool,
         pub pubkey: String,
-        pub scriptPubKey: String,
+        pub script_pub_key: String,
     }
 }
 pub mod verifychain {
@@ -1053,20 +1053,20 @@ pub mod verifytxoutproof {
     pub type VerifytxoutproofResponse = Vec<String>;
 }
 pub mod z_exportkey {
-    pub type Z_exportkeyResponse = String;
+    pub type ZExportkeyResponse = String;
 }
 pub mod z_exportviewingkey {
-    pub type Z_exportviewingkeyResponse = String;
+    pub type ZExportviewingkeyResponse = String;
 }
 pub mod z_exportwallet {
-    pub type Z_exportwalletResponse = String;
+    pub type ZExportwalletResponse = String;
 }
 pub mod z_getbalance {
-    pub type Z_getbalanceResponse = rust_decimal::Decimal;
+    pub type ZGetbalanceResponse = rust_decimal::Decimal;
 }
 pub mod z_getmigrationstatus {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_getmigrationstatusResponse {
+    pub struct ZGetmigrationstatusResponse {
         pub time_started: Option<rust_decimal::Decimal>,
         pub destination_address: String,
         pub enabled: bool,
@@ -1078,21 +1078,21 @@ pub mod z_getmigrationstatus {
     }
 }
 pub mod z_getnewaddress {
-    pub type Z_getnewaddressResponse = String;
+    pub type ZGetnewaddressResponse = String;
 }
 pub mod z_getnotescount {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_getnotescountResponse {
+    pub struct ZGetnotescountResponse {
         pub sapling: rust_decimal::Decimal,
         pub sprout: rust_decimal::Decimal,
     }
 }
 pub mod z_getpaymentdisclosure {
-    pub type Z_getpaymentdisclosureResponse = String;
+    pub type ZGetpaymentdisclosureResponse = String;
 }
 pub mod z_gettotalbalance {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_gettotalbalanceResponse {
+    pub struct ZGettotalbalanceResponse {
         pub private: rust_decimal::Decimal,
         pub total: rust_decimal::Decimal,
         pub transparent: rust_decimal::Decimal,
@@ -1101,21 +1101,21 @@ pub mod z_gettotalbalance {
 pub mod z_gettreestate {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Commitments {
-        pub finalRoot: String,
-        pub finalState: String,
+        pub final_root: String,
+        pub final_state: String,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Sapling {
         pub commitments: Commitments,
-        pub skipHash: String,
+        pub skip_hash: String,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Sprout {
         pub commitments: Commitments,
-        pub skipHash: String,
+        pub skip_hash: String,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_gettreestateResponse {
+    pub struct ZGettreestateResponse {
         pub hash: String,
         pub height: rust_decimal::Decimal,
         pub sapling: Sapling,
@@ -1124,7 +1124,7 @@ pub mod z_gettreestate {
 }
 pub mod z_importkey {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_importkeyResponse {
+    pub struct ZImportkeyResponse {
         pub address: String,
         #[serde(rename = "type")]
         pub type_field: String,
@@ -1132,7 +1132,7 @@ pub mod z_importkey {
 }
 pub mod z_importviewingkey {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_importviewingkeyResponse {
+    pub struct ZImportviewingkeyResponse {
         pub address: String,
         #[serde(rename = "type")]
         pub type_field: String,
@@ -1140,19 +1140,19 @@ pub mod z_importviewingkey {
 }
 pub mod z_importwallet {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_importwalletResponse;
+    pub struct ZImportwalletResponse;
 }
 pub mod z_listaddresses {
-    pub type Z_listaddressesResponse = Vec<String>;
+    pub type ZListaddressesResponse = Vec<String>;
 }
 pub mod z_listoperationids {
-    pub type Z_listoperationidsResponse = Vec<String>;
+    pub type ZListoperationidsResponse = Vec<String>;
 }
 pub mod z_listreceivedbyaddress {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_listreceivedbyaddressResponse {
+    pub struct ZListreceivedbyaddressResponse {
         pub amount: rust_decimal::Decimal,
-        pub amountZat: rust_decimal::Decimal,
+        pub amount_zat: rust_decimal::Decimal,
         pub blockheight: rust_decimal::Decimal,
         pub blockindex: rust_decimal::Decimal,
         pub blocktime: rust_decimal::Decimal,
@@ -1167,7 +1167,7 @@ pub mod z_listreceivedbyaddress {
 }
 pub mod z_listunspent {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_listunspent {
+    pub struct ZListunspent {
         pub address: String,
         pub amount: rust_decimal::Decimal,
         pub change: bool,
@@ -1179,42 +1179,42 @@ pub mod z_listunspent {
         pub spendable: bool,
         pub txid: String,
     }
-    pub type Z_listunspentResponse = Vec<Z_listunspent>;
+    pub type ZListunspentResponse = Vec<ZListunspent>;
 }
 pub mod z_mergetoaddress {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_mergetoaddressResponse {
-        pub mergingNotes: rust_decimal::Decimal,
-        pub mergingShieldedValue: rust_decimal::Decimal,
-        pub mergingTransparentValue: rust_decimal::Decimal,
-        pub mergingUTXOs: rust_decimal::Decimal,
+    pub struct ZMergetoaddressResponse {
+        pub merging_notes: rust_decimal::Decimal,
+        pub merging_shielded_value: rust_decimal::Decimal,
+        pub merging_transparent_value: rust_decimal::Decimal,
+        pub merging_u_t_x_os: rust_decimal::Decimal,
         pub opid: String,
-        pub remainingNotes: rust_decimal::Decimal,
-        pub remainingShieldedValue: rust_decimal::Decimal,
-        pub remainingTransparentValue: rust_decimal::Decimal,
-        pub remainingUTXOs: rust_decimal::Decimal,
+        pub remaining_notes: rust_decimal::Decimal,
+        pub remaining_shielded_value: rust_decimal::Decimal,
+        pub remaining_transparent_value: rust_decimal::Decimal,
+        pub remaining_u_t_x_os: rust_decimal::Decimal,
     }
 }
 pub mod z_sendmany {
-    pub type Z_sendmanyResponse = String;
+    pub type ZSendmanyResponse = String;
 }
 pub mod z_setmigration {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_setmigrationResponse;
+    pub struct ZSetmigrationResponse;
 }
 pub mod z_shieldcoinbase {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_shieldcoinbaseResponse {
+    pub struct ZShieldcoinbaseResponse {
         pub opid: String,
-        pub remainingUTXOs: rust_decimal::Decimal,
-        pub remainingValue: rust_decimal::Decimal,
-        pub shieldingUTXOs: rust_decimal::Decimal,
-        pub shieldingValue: rust_decimal::Decimal,
+        pub remaining_u_t_x_os: rust_decimal::Decimal,
+        pub remaining_value: rust_decimal::Decimal,
+        pub shielding_u_t_x_os: rust_decimal::Decimal,
+        pub shielding_value: rust_decimal::Decimal,
     }
 }
 pub mod z_validateaddress {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_validateaddressResponse {
+    pub struct ZValidateaddressResponse {
         pub address: String,
         pub diversifiedtransmissionkey: String,
         pub diversifier: String,
@@ -1228,40 +1228,40 @@ pub mod z_validateaddress {
 }
 pub mod z_validatepaymentdisclosure {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_validatepaymentdisclosureResponse;
+    pub struct ZValidatepaymentdisclosureResponse;
 }
 pub mod z_viewtransaction {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Outputs {
         pub address: String,
         pub js: rust_decimal::Decimal,
-        pub jsOutput: rust_decimal::Decimal,
+        pub js_output: rust_decimal::Decimal,
         pub memo: String,
-        pub memoStr: String,
+        pub memo_str: String,
         pub outgoing: bool,
         pub output: rust_decimal::Decimal,
         #[serde(rename = "type")]
         pub type_field: String,
         pub value: rust_decimal::Decimal,
-        pub valueZat: rust_decimal::Decimal,
+        pub value_zat: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Spends {
         pub address: String,
         pub js: rust_decimal::Decimal,
-        pub jsOutputPrev: rust_decimal::Decimal,
-        pub jsPrev: rust_decimal::Decimal,
-        pub jsSpend: rust_decimal::Decimal,
-        pub outputPrev: rust_decimal::Decimal,
+        pub js_output_prev: rust_decimal::Decimal,
+        pub js_prev: rust_decimal::Decimal,
+        pub js_spend: rust_decimal::Decimal,
+        pub output_prev: rust_decimal::Decimal,
         pub spend: rust_decimal::Decimal,
-        pub txidPrev: String,
+        pub txid_prev: String,
         #[serde(rename = "type")]
         pub type_field: String,
         pub value: rust_decimal::Decimal,
-        pub valueZat: rust_decimal::Decimal,
+        pub value_zat: rust_decimal::Decimal,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Z_viewtransactionResponse {
+    pub struct ZViewtransactionResponse {
         pub outputs: Vec<Outputs>,
         pub spends: Vec<Spends>,
         pub txid: String,

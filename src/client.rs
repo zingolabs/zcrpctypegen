@@ -1,6 +1,7 @@
 //! Includes both `Client` and all of the RPC response types.
 #[macro_use]
 mod callrpc;
+pub mod rpc_response_types;
 pub mod subcomponents;
 pub mod utils;
 
