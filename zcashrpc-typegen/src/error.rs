@@ -49,14 +49,14 @@ pub struct QuizfaceAnnotationError {
     pub location: String,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug, PartialEq)]
 pub enum InvalidAnnotationKind {
     Null,
     Bool(bool),
     Number(rust_decimal::Decimal),
     InvalidString(String),
     EmptyArray,
+    Insufficient,
 }
 
 impl From<serde_json::Value> for InvalidAnnotationKind {

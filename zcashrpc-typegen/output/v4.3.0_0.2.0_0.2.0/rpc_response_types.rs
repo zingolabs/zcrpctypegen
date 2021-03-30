@@ -473,11 +473,6 @@ pub mod getblocksubsidy {
         pub miner: rust_decimal::Decimal,
     }
 }
-pub mod getblocktemplate {
-    pub type GetblocktemplateResponse = compile_error!(
-        "Insufficient zcash-cli help output to autogenerate type"
-    );
-}
 pub mod getchaintips {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Getchaintips {
@@ -1091,16 +1086,6 @@ pub mod z_getnotescount {
         pub sapling: rust_decimal::Decimal,
         pub sprout: rust_decimal::Decimal,
     }
-}
-pub mod z_getoperationresult {
-    pub type Z_getoperationresultResponse = compile_error!(
-        "Insufficient zcash-cli help output to autogenerate type"
-    );
-}
-pub mod z_getoperationstatus {
-    pub type Z_getoperationstatusResponse = compile_error!(
-        "Insufficient zcash-cli help output to autogenerate type"
-    );
 }
 pub mod z_getpaymentdisclosure {
     pub type Z_getpaymentdisclosureResponse = String;

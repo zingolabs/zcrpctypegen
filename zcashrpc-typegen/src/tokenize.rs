@@ -64,9 +64,14 @@ fn terminal(
             "bool" => quote!(bool),
             "String" => quote!(String),
             "hexadecimal" => quote!(String),
-            "INSUFFICIENT" => quote!(compile_error!(
-                "Insufficient zcash-cli help output to autogenerate type"
-            )),
+            "INSUFFICIENT" => {
+                return Err(error::TypegenError::from(
+                    error::QuizfaceAnnotationError {
+                        kind: error::InvalidAnnotationKind::Insufficient,
+                        location: name.to_string(),
+                    },
+                ))
+            }
             enumeration if enumeration.starts_with("ENUM:") => {
                 let ident = crate::callsite_ident(name);
                 acc.push(handle_terminal_enum(enumeration, name));

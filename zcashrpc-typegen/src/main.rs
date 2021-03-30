@@ -28,20 +28,26 @@ fn main() {
         file_node1.path().cmp(&file_node2.path())
     });
     for filenode in iter {
-        if let Ok(code) = process_response(&filenode.path()) {
-            let mut outfile = std::fs::OpenOptions::new()
-                .append(true)
-                .open(output_path())
-                .unwrap();
-            outfile.write_all(code.to_string().as_bytes()).unwrap();
-            assert!(std::process::Command::new("rustfmt")
-                .arg(output_path())
-                .output()
-                .unwrap()
-                .status
-                .success());
-        } else {
-            todo!("Holy moly something is messed up!");
+        match process_response(&filenode.path()) {
+            Ok(code) => {
+                let mut outfile = std::fs::OpenOptions::new()
+                    .append(true)
+                    .open(output_path())
+                    .unwrap();
+                outfile.write_all(code.to_string().as_bytes()).unwrap();
+                assert!(std::process::Command::new("rustfmt")
+                    .arg(output_path())
+                    .output()
+                    .unwrap()
+                    .status
+                    .success());
+            }
+            Err(error::TypegenError::Annotation(err))
+                if err.kind == error::InvalidAnnotationKind::Insufficient =>
+            {
+                ()
+            }
+            _ => todo!("Holy moly something is messed up!"),
         }
     }
 }
@@ -67,17 +73,9 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
             0 => emptygen(&name, acc),
             1 => match vec.pop().unwrap() {
                 serde_json::Value::Object(obj) => {
-                    structgen(obj, &name, acc)
-                        .expect(&format!(
-                            "file_body of {} struct failed to match",
-                            file.to_str().unwrap()
-                        ))
-                        .1
+                    structgen(obj, &name, acc).map(|x| x.1)?
                 }
-                val => alias(val, &name, acc).expect(&format!(
-                    "file_body of {} alias failed to match",
-                    file.to_str().unwrap()
-                )),
+                val => alias(val, &name, acc)?,
             },
             _ => enumgen(vec, &name, acc)?,
         },
