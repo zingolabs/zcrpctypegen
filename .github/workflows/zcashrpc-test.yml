@@ -25,9 +25,8 @@ jobs:
                   ghcr.io/zingolabs/zcashrpc:latest
                   bash -c "./zcash/src/zcashd -daemon && 
                            cd zcashrpc &&
-                           cargo test &&
+                           cargo test --all &&
                            cd ../quizface &&
                            cat lists/passing.txt | xargs cargo run &&
                            cd ../zcashrpc/zcashrpc-typegen &&
-                           cargo test &&
                            cargo run ../../quizface/output/v4.3.0_0.2.0"
