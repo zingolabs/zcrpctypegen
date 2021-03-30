@@ -25,6 +25,7 @@ jobs:
        -v /home/runner/work/zcashrpc/quizface:/quizface
        ghcr.io/zingolabs/zcashrpc:latest
        bash -c "export PATH=$PATH:./zcash/src/
+       && echo $PATH
        && zcashd -daemon
        && cd zcashrpc
        && cargo test --all
