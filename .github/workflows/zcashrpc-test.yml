@@ -24,8 +24,8 @@ jobs:
        -v /home/runner/work/zcashrpc/zcashrpc:/zcashrpc
        -v /home/runner/work/zcashrpc/quizface:/quizface
        ghcr.io/zingolabs/zcashrpc:latest
-       bash -c "ln -sf ./zcash/src/zcash-cli /usr/local/bin/zcash-cli
-       && ln -sf ./zcash/src/zcashd /usr/local/bin/zcashd
+       bash -c "mv ./zcash/src/zcash-cli /usr/local/bin/zcash-cli
+       && mv ./zcash/src/zcashd /usr/local/bin/zcashd
        && zcashd -daemon
        && cd zcashrpc
        && cargo test --all
