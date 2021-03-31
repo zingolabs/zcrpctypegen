@@ -5,7 +5,8 @@ pub mod subcomponents;
 pub mod utils;
 
 use self::subcomponents::{
-    GenerateResponse, GetBlockChainInfoResponse, ZGetNewAddressResponse,
+    generate::GenerateResponse, getblockchaininfo::GetblockchaininfoResponse,
+    z_getnewaddress::ZGetnewaddressResponse,
 };
 use crate::ResponseResult;
 use serde::de::DeserializeOwned;
@@ -27,8 +28,8 @@ impl Client {
     }
 
     zcashrpc_macros::declare_rpc_client_methods! {
-        GetBlockChainInfo,
-        ZGetNewAddress,
+        Getblockchaininfo,
+        ZGetnewaddress,
         Generate (how_many: u32),
     }
 }
