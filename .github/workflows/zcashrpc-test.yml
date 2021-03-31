@@ -28,10 +28,11 @@ jobs:
        && mv ./zcash/src/zcashd /usr/local/bin/zcashd
        && zcashd -daemon
        && cd zcashrpc
-       && cargo test --all
+       && cargo test
        && cd ../quizface
        && cat lists/passing.txt | xargs cargo run
        && cd ../zcashrpc/zcashrpc-typegen
+       && cargo test
        && cargo run ../../quizface/output/v4.3.0_0.2.0
        && cp output/v4.3.0_0.2.0_0.2.0/rpc_response_types.rs ../src/client/subcomponents.rs
        && cd ..
