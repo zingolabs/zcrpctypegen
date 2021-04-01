@@ -24,6 +24,9 @@ zcashrpc-api = { git = "https://github.com/zingolabs/zcashrpc-api.git", branch =
 [dev-dependencies]
 tokio = { version = "*", features = ["macros"] }
 
+[build-dependencies]
+tokio = { version = "0.2.23", features = ["macros"] }
+
 [features]
 default = ["cookie-finder"]
 cookie-finder = ["dirs"]
