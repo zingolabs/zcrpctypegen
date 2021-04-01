@@ -1,10 +1,9 @@
 //! Includes both `Client` and all of the RPC response types.
 #[macro_use]
 mod callrpc;
-pub mod subcomponents;
 pub mod utils;
 
-use self::subcomponents::{
+use zcashrpc_api::{
     generate::GenerateResponse, getblockchaininfo::GetblockchaininfoResponse,
     z_getnewaddress::ZGetnewaddressResponse,
 };
