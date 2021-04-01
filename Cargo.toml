@@ -19,6 +19,7 @@ derive_more = "*"
 base64 = "*"
 dirs = { version = "*", optional = true }
 rust_decimal = "*"
+zcashrpc-api = { git = "https://github.com/zingolabs/zcashrpc-api.git", branch = "main" }
 
 [dev-dependencies]
 tokio = { version = "*", features = ["macros"] }

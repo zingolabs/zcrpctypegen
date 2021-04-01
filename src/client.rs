@@ -1,7 +1,7 @@
 //! Includes both `Client` and all of the RPC response types.
 #[macro_use]
 mod callrpc;
-pub mod subcomponents;
+use zcashrpc_api as subcomponents;
 pub mod utils;
 
 use self::subcomponents::{
