@@ -22,10 +22,7 @@ rust_decimal = "*"
 zcashrpc-api = { git = "https://github.com/zingolabs/zcashrpc-api.git", branch = "main" }
 
 [dev-dependencies]
-tokio = { version = "*", features = ["macros"] }
-
-[build-dependencies]
-tokio = { version = "0.2.23", features = ["macros"] }
+tokio = { version = "0.2.23*", features = ["macros"] }
 
 [features]
 default = ["cookie-finder"]
