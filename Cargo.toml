@@ -5,29 +5,26 @@ authors = ["noone <noone@nowhere.net>", "Za <zancas@zingolabs.com>", "Gy <gygaxi
 edition = "2018"
 
 [workspace]
-members = ["zcash-rcli", "zcashrpc-macros", "zcashrpc-typegen"]
+members = ["zcashrpc-macros", "zcashrpc-typegen"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 zcashrpc-macros = { path = "zcashrpc-macros" }
-tokio = { version = "0.2.23", features = ["macros"] }
 reqwest = { version = "0.10.8", features = ["json"] }
 serde = { version = "*", features = ["derive"] }
 serde_derive = "*"
 serde_json = "*"
-json_typegen = { git = "https://github.com/AloeareV/json_typegen.git", branch = "type_aliasing_option" }
 derive_more = "*"
 base64 = "*"
-eyre = "*"
 dirs = { version = "*", optional = true }
-proc-macro2 = "1.0"
-quote = "1.0"
-cfg-if = "0.1.10"
 rust_decimal = "*"
 
-[build-dependencies]
+[dev-dependencies]
 tokio = { version = "*", features = ["macros"] }
+
+[build-dependencies]
+tokio = { version = "0.2.23", features = ["macros"] }
 reqwest = { version = "0.10.8", features = ["json"] }
 serde = { version = "*", features = ["derive"] }
 dirs = { version = "*", optional = true }
