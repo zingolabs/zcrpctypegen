@@ -99,7 +99,7 @@ impl VisitMut for V {
     fn visit_ident_mut(&mut self, ident: &mut syn::Ident) {
         let id = &ident.to_string();
         if let Some(index) = id.rfind("Response") {
-            dbg!(&id[..index]);
+            //dbg!(&id[..index]);
         }
         syn::visit_mut::visit_ident_mut(self, ident);
     }
