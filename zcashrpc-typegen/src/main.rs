@@ -171,8 +171,8 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
                 ),
             },
             2 => enumgen(arg_sets, &type_name, true)?,
-            _ => {
-                eprint!("Error, known RPC help output contains a maximum of two sets of arguments.");
+            otherwise => {
+                eprint!("Error, known RPC help output contains a maximum of two sets of arguments, but we found {} this time.", otherwise);
                 enumgen(arg_sets, &type_name, true)?
             }
         },
