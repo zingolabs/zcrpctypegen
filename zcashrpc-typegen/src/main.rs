@@ -564,8 +564,10 @@ fn alias(
     name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
     let ident = callsite_ident(&name);
-    let (type_body, mut inner_structs, terminal_enum) =
-        tokenize::value(&name.trim_end_matches("Response"), data)?;
+    let (type_body, mut inner_structs, terminal_enum) = tokenize::value(
+        &[&name.trim_end_matches("Response"), "Element"].concat(),
+        data,
+    )?;
     if !terminal_enum {
         let aliased = quote!(
             pub type #ident = #type_body;

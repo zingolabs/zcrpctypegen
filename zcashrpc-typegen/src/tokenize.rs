@@ -105,7 +105,7 @@ fn terminal(
     ))
 }
 
-const Z_GETOPERATION_VARIANTS: &[&str] = &["Excecuting", "Success", "Failed"];
+const Z_GETOPERATION_VARIANTS: &[&str] = &["Executing", "Success", "Failed"];
 fn array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
