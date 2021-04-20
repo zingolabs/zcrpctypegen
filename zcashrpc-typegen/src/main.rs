@@ -2,8 +2,8 @@
 //! a set of concrete Rust types for responses from the zcashd-RPC interface.
 
 mod error;
-mod special_cases;
-mod tokenize;
+mod generators;
+mod utils;
 use error::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -29,7 +29,7 @@ fn main() {
         dispatch_to_processors(filenode, &mut arguments, &mut responses);
     }
     for (name, resp) in responses {
-        let mod_name = get_mod_name(&name);
+        let mod_name = utils::get_mod_name(&name);
         let args = arguments.remove(&name);
         write_output_to_file(quote!(
             pub mod #mod_name {
@@ -108,48 +108,18 @@ fn write_output_to_file(code: TokenStream) {
         .success());
 }
 
-fn get_mod_name(name: &str) -> proc_macro2::Ident {
-    callsite_ident(&if special_cases::RESERVED_KEYWORDS.contains(&name) {
-        format!("{}_mod", name)
-    } else {
-        name.to_string()
-    })
-}
-
-fn under_to_camel(name: &str) -> String {
-    name.split('_').map(|x| capitalize_first_char(x)).collect()
-}
-
-fn camel_to_under(name: &str) -> String {
-    name.chars()
-        .fold(vec![String::new()], |mut v, c| {
-            if c.is_ascii_uppercase() {
-                v.push(c.to_ascii_lowercase().to_string());
-                v
-            } else {
-                let end = v.len() - 1;
-                v[end].push(c);
-                v
-            }
-        })
-        .into_iter()
-        .skip_while(String::is_empty)
-        .collect::<Vec<String>>()
-        .join("_")
-}
-
 fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
     let (type_name, file_body) = get_name_and_body_from_file(file);
     let mut output = match file_body {
         serde_json::Value::Array(mut arg_sets) => match arg_sets.len() {
-            0 => emptygen(&type_name),
+            0 => generators::emptygen(&type_name),
             1 => match arg_sets.pop().unwrap() {
                 serde_json::Value::Object(args) => {
-                    structgen(args, &type_name).map(|x| x.1)?
+                    generators::structgen(args, &type_name).map(|x| x.1)?
                 }
-                val => alias(val, &type_name)?,
+                val => generators::alias(val, &type_name)?,
             },
-            _ => response_enumgen(arg_sets, &type_name)?,
+            _ => generators::response_enumgen(arg_sets, &type_name)?,
         },
         non_array => {
             panic!("Received {}, expected array", non_array.to_string())
@@ -165,21 +135,21 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
     let (type_name, file_body) = get_name_and_body_from_file(file);
     let mut output = match file_body {
         serde_json::Value::Array(mut arg_sets) => match arg_sets.len() {
-            0 => emptygen(&type_name),
+            0 => generators::emptygen(&type_name),
             1 => match arg_sets.pop().unwrap() {
                 serde_json::Value::Object(args) => {
-                    argumentgen(args, &type_name).map(|x| x.1)?
+                    generators::argumentgen(args, &type_name).map(|x| x.1)?
                 }
                 _ => panic!(
                     "Recieved arguments not in object format for file {}",
-                    under_to_camel(&type_name)
+                    utils::under_to_camel(&type_name)
                 ),
             },
 
-            2 => arguments_enumgen(arg_sets, &type_name)?,
+            2 => generators::arguments_enumgen(arg_sets, &type_name)?,
             otherwise => {
                 eprint!("Error, known RPC help output contains a maximum of two sets of arguments, but we found {} this time.", otherwise);
-                arguments_enumgen(arg_sets, &type_name)?
+                generators::arguments_enumgen(arg_sets, &type_name)?
             }
         },
         non_array => {
@@ -192,14 +162,11 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
     Ok(quote::quote!(#(#output)*))
 }
 
-const RESPONSE_VARIANTS: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
-const ARGUMENT_VARIANTS: &[&str] = &["MultiAddress", "Address"];
-
 fn get_name_and_body_from_file(
     file: &std::path::Path,
 ) -> (String, serde_json::Value) {
     let (file_name, file_body) = get_data(file);
-    let type_name = under_to_camel(&file_name);
+    let type_name = utils::under_to_camel(&file_name);
     (type_name, file_body)
 }
 
@@ -261,331 +228,6 @@ fn from_file_deserialize(
             error::JsonError::from_serde_json_error(err, file_body)
         })?;
     Ok(file_body_json)
-}
-
-/// Simple wrapper that always generates Idents with "call_site" spans.
-fn callsite_ident(name: &str) -> proc_macro2::Ident {
-    proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
-}
-
-fn handle_options_and_keywords(
-    serde_rename: &mut Option<TokenStream>,
-    field_name: &mut String,
-    option: &mut bool,
-) -> () {
-    if special_cases::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
-        *serde_rename = Some(
-            format!("#[serde(rename = \"{}\")]", &field_name)
-                .parse()
-                .unwrap(),
-        );
-        field_name.push_str("_field");
-    }
-
-    if field_name.starts_with("Option<") {
-        *field_name = field_name
-            .trim_end_matches(">")
-            .trim_start_matches("Option<")
-            .to_string();
-        *option = true;
-    }
-}
-
-fn response_enumgen(
-    inner_nodes: Vec<serde_json::Value>,
-    enum_name: &str,
-) -> TypegenResult<Vec<TokenStream>> {
-    assert!(inner_nodes.len() <= RESPONSE_VARIANTS.len());
-    let mut inner_structs = Vec::new();
-    let ident = callsite_ident(enum_name);
-    let enum_code: Vec<TokenStream> = inner_nodes
-        .into_iter()
-        .zip(RESPONSE_VARIANTS.iter())
-        .map(|(value, variant_name)| {
-            let variant_name_tokens = callsite_ident(&variant_name);
-            match value {
-                serde_json::Value::Object(obj) => tokenize::variant(
-                    enum_name,
-                    obj,
-                    &mut inner_structs,
-                    &variant_name_tokens,
-                ),
-                non_object => {
-                    let (variant_body_tokens, new_structs, _terminal_enum) =
-                        tokenize::value(&variant_name, non_object)?;
-                    inner_structs.extend(new_structs);
-                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
-                }
-            }
-        })
-        .collect::<TypegenResult<Vec<TokenStream>>>()?;
-    inner_structs.push(quote!(
-            #[derive(Debug, serde::Deserialize, serde::Serialize)]
-            pub enum #ident {
-                #(#enum_code)*
-            }
-    ));
-    Ok(inner_structs)
-}
-fn arguments_enumgen(
-    inner_nodes: Vec<serde_json::Value>,
-    enum_name: &str,
-) -> TypegenResult<Vec<TokenStream>> {
-    let mut inner_structs = Vec::new();
-    let ident = callsite_ident(enum_name);
-    let enum_code: Vec<TokenStream> = inner_nodes
-        .into_iter()
-        .map(|value| {
-            if let serde_json::Value::Object(obj) = value {
-                handle_argument_fields_names(obj)
-            } else {
-                panic!("Not an Object variant!")
-            }
-        })
-        .zip(ARGUMENT_VARIANTS.iter())
-        .map(|(obj, variant_name)| {
-            let variant_name_tokens = callsite_ident(&variant_name);
-            tokenize::variant(
-                enum_name,
-                obj,
-                &mut inner_structs,
-                &variant_name_tokens,
-            )
-        })
-        .collect::<TypegenResult<Vec<TokenStream>>>()?;
-    inner_structs.push(quote!(
-            #[derive(Debug, serde::Deserialize, serde::Serialize)]
-            pub enum #ident {
-                #(#enum_code)*
-            }
-    ));
-    Ok(inner_structs)
-}
-fn inner_enumgen(
-    inner_nodes: Vec<(serde_json::Value, &str)>,
-    enum_name: &str,
-) -> TypegenResult<Vec<TokenStream>> {
-    let mut inner_structs = Vec::new();
-    let ident = callsite_ident(enum_name);
-    let enum_code: Vec<TokenStream> = inner_nodes
-        .into_iter()
-        .map(|(value, variant_name)| {
-            let variant_name_tokens = callsite_ident(&variant_name);
-            match value {
-                serde_json::Value::Object(obj) => tokenize::variant(
-                    enum_name,
-                    obj,
-                    &mut inner_structs,
-                    &variant_name_tokens,
-                ),
-                non_object => {
-                    let (variant_body_tokens, new_structs, _terminal_enum) =
-                        tokenize::value(&variant_name, non_object)?;
-                    inner_structs.extend(new_structs);
-                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
-                }
-            }
-        })
-        .collect::<TypegenResult<Vec<TokenStream>>>()?;
-    inner_structs.push(quote!(
-            #[derive(Debug, serde::Deserialize, serde::Serialize)]
-            pub enum #ident {
-                #(#enum_code)*
-            }
-    ));
-    Ok(inner_structs)
-}
-
-fn structgen(
-    inner_nodes: serde_json::Map<String, serde_json::Value>,
-    struct_name: &str,
-) -> TypegenResult<(special_cases::Case, Vec<TokenStream>)> {
-    let ident = callsite_ident(struct_name);
-    let field_data = handle_fields(struct_name, inner_nodes)?;
-    let mut ident_val_tokens = field_data.ident_val_tokens;
-    let body = match field_data.case {
-        special_cases::Case::Regular => {
-            add_pub_keywords(&mut ident_val_tokens);
-            quote!(
-                pub struct #ident {
-                    #(#ident_val_tokens)*
-                }
-            )
-        }
-        special_cases::Case::FourXs => {
-            return Ok((special_cases::Case::FourXs, field_data.inner_structs));
-        }
-    };
-
-    let mut generated_code = vec![quote!(
-        #[derive(Debug, serde::Deserialize, serde::Serialize)]
-        #body
-    )];
-    generated_code.extend(field_data.inner_structs);
-    Ok((special_cases::Case::Regular, generated_code))
-}
-
-fn emptygen(struct_name: &str) -> Vec<TokenStream> {
-    let ident = callsite_ident(struct_name);
-    vec![quote!(
-        #[derive(Debug, serde::Deserialize, serde::Serialize)]
-        pub struct #ident;
-    )]
-}
-
-fn argumentgen(
-    inner_nodes: serde_json::Map<String, serde_json::Value>,
-    struct_name: &str,
-) -> TypegenResult<(special_cases::Case, Vec<TokenStream>)> {
-    let new_nodes = handle_argument_fields_names(inner_nodes);
-    structgen(new_nodes, struct_name)
-}
-
-fn handle_argument_field_name(field_name: String) -> String {
-    field_name
-        .chars()
-        .map(|a_char| {
-            match a_char.to_string().as_str() {
-                "-" | "_" => "_",
-                "<" => "<",
-                ">" => ">",
-                "|" => "_or_",
-                "1" => "one",
-                "2" => "two",
-                "3" => "three",
-                "4" => "four",
-                "5" => "five",
-                "6" => "six",
-                c if c.chars().next().unwrap().is_alphabetic() => c,
-                c => {
-                    eprintln!(
-                        "WARNING: omitting bad char '{}' in field name '{}'",
-                        c, &field_name
-                    );
-                    ""
-                }
-            }
-            .to_string()
-        })
-        .collect()
-}
-
-fn handle_argument_fields_names(
-    nodes: serde_json::Map<String, serde_json::Value>,
-) -> serde_json::Map<String, serde_json::Value> {
-    nodes
-        .into_iter()
-        .map(|(field_name, val)| {
-            let new_field_name = if field_name.starts_with("Option<") {
-                format!(
-                    "Option<{}>",
-                    handle_argument_field_name(
-                        field_name
-                            .strip_prefix("Option<")
-                            .unwrap()
-                            .strip_suffix(">")
-                            .unwrap()
-                            .to_string()
-                    )
-                )
-            } else {
-                handle_argument_field_name(field_name)
-            };
-
-            (new_field_name, val)
-        })
-        .collect()
-}
-
-fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
-    *tokens = tokens
-        .into_iter()
-        .map(|ts| match ts.clone().into_iter().next() {
-            None | Some(proc_macro2::TokenTree::Punct(_)) => ts.clone(),
-            _ => quote!(pub #ts),
-        })
-        .collect();
-}
-
-struct FieldsInfo {
-    case: special_cases::Case,
-    ident_val_tokens: Vec<TokenStream>,
-    inner_structs: Vec<TokenStream>,
-}
-fn handle_fields(
-    struct_name: &str,
-    inner_nodes: serde_json::Map<String, serde_json::Value>,
-) -> TypegenResult<FieldsInfo> {
-    let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
-    let mut inner_structs = Vec::new();
-    let mut case = special_cases::Case::Regular;
-    for (mut field_name, val) in inner_nodes {
-        //special case handling
-        if &field_name == "xxxx" {
-            inner_structs = tokenize::value(struct_name, val)?.1; // .0 unused
-            case = special_cases::Case::FourXs;
-            break;
-        }
-
-        let mut serde_rename = None;
-        let mut option = false;
-        handle_options_and_keywords(
-            &mut serde_rename,
-            &mut field_name,
-            &mut option,
-        );
-        field_name = camel_to_under(&field_name);
-
-        //temp_acc needed because destructuring assignments are unstable
-        //see https://github.com/rust-lang/rust/issues/71126 for more info
-        let (mut tokenized_val, new_struct, _terminal_enum) =
-            tokenize::value(&under_to_camel(&field_name), val)?;
-        inner_structs.extend(new_struct);
-        if option {
-            use std::str::FromStr as _;
-            tokenized_val =
-                TokenStream::from_str(&format!("Option<{}>", tokenized_val))
-                    .unwrap();
-        }
-
-        let token_ident = callsite_ident(&field_name);
-        ident_val_tokens.push(quote!(#serde_rename));
-        ident_val_tokens.push(quote!(#token_ident: #tokenized_val,));
-    }
-    Ok(FieldsInfo {
-        case,
-        inner_structs,
-        ident_val_tokens,
-    })
-}
-
-fn alias(
-    data: serde_json::Value,
-    name: &str,
-) -> TypegenResult<Vec<TokenStream>> {
-    let ident = callsite_ident(&name);
-    let (type_body, mut inner_structs, terminal_enum) = tokenize::value(
-        &[&name.trim_end_matches("Response"), "Element"].concat(),
-        data,
-    )?;
-    if !terminal_enum {
-        let aliased = quote!(
-            pub type #ident = #type_body;
-        );
-        inner_structs.push(aliased);
-    }
-    Ok(inner_structs)
-}
-
-fn capitalize_first_char(input: &str) -> String {
-    if input.len() == 0 {
-        dbg!(input);
-        return input.to_string();
-    }
-    let mut ret = input.to_string();
-    let ch = ret.remove(0);
-    ret.insert(0, ch.to_ascii_uppercase());
-    ret
 }
 
 #[cfg(test)]

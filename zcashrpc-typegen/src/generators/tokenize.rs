@@ -1,5 +1,4 @@
-use crate::error;
-use crate::special_cases;
+use crate::{error, generators, utils::callsite_ident};
 use error::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -13,9 +12,9 @@ fn handle_terminal_enum(label: &str, name: &str) -> TokenStream {
     let variant_idents = variants
         .clone()
         .map(|x| {
-            proc_macro2::TokenTree::Ident(crate::callsite_ident(
+            proc_macro2::TokenTree::Ident(callsite_ident(
                 &x.split('-')
-                    .map(crate::capitalize_first_char)
+                    .map(crate::utils::under_to_camel)
                     .collect::<String>(),
             ))
             .into()
@@ -24,7 +23,7 @@ fn handle_terminal_enum(label: &str, name: &str) -> TokenStream {
     let variant_idents_renames = variants
         .map(|x| format!("#[serde(rename = \"{}\")]", x).parse().unwrap())
         .collect::<Vec<TokenStream>>();
-    let name_tokens = crate::callsite_ident(&format!("{}Response", name));
+    let name_tokens = callsite_ident(&format!("{}Response", name));
     quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
         pub enum #name_tokens {
@@ -52,21 +51,6 @@ pub(crate) fn value(
     }
 }
 
-pub(crate) fn variant(
-    enum_name: &str,
-    obj: serde_json::Map<String, serde_json::Value>,
-    inner_structs: &mut std::vec::Vec<TokenStream>,
-    variant_name_tokens: &proc_macro2::Ident,
-) -> TypegenResult<TokenStream> {
-    let field_data = crate::handle_fields(enum_name, obj)?;
-    inner_structs.extend(field_data.inner_structs);
-    let variant_body_tokens = field_data.ident_val_tokens;
-    Ok(quote!(
-                            #variant_name_tokens {
-                                #(#variant_body_tokens)*
-                            },))
-}
-
 fn terminal(
     name: &str,
     label: &str,
@@ -86,7 +70,7 @@ fn terminal(
                 ))
             }
             enumeration if enumeration.starts_with("ENUM:") => {
-                let ident = crate::callsite_ident(name);
+                let ident = callsite_ident(name);
                 let enum_tokens = handle_terminal_enum(enumeration, name);
                 return Ok((quote!(#ident), vec![enum_tokens], true));
             }
@@ -121,8 +105,8 @@ fn array(
             Ok((quote!(Vec<#val>), inner_structs))
         }
         _ => {
-            let ident = crate::callsite_ident(name);
-            crate::inner_enumgen(
+            let ident = callsite_ident(name);
+            generators::inner_enumgen(
                 array_of
                     .into_iter()
                     .zip(Z_GETOPERATION_VARIANTS)
@@ -139,11 +123,11 @@ fn object(
     name: &str,
     val: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
-    let ident = crate::callsite_ident(name);
-    let (case, inner_structs) = crate::structgen(val, name)?;
+    let ident = callsite_ident(name);
+    let (case, inner_structs) = generators::structgen(val, name)?;
     match case {
-        special_cases::Case::Regular => Ok((quote!(#ident), inner_structs)),
-        special_cases::Case::FourXs => Ok((
+        super::utils::FourXs::False => Ok((quote!(#ident), inner_structs)),
+        super::utils::FourXs::True => Ok((
             quote!(std::collections::HashMap<String, #ident>),
             inner_structs,
         )),
