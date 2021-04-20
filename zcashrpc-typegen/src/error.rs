@@ -89,16 +89,6 @@ mod unit {
         }
     }
     #[test]
-    fn test_invalid_annotation() {
-        let expected_err = QuizfaceAnnotationError::from((
-            InvalidAnnotationKind::Null,
-            "foo".to_string(),
-        ));
-        let err =
-            crate::tokenize::value("foo", serde_json::Value::Null).unwrap_err();
-        assert_eq!(TypegenError::Annotation(expected_err), err);
-    }
-    #[test]
     fn test_invalid_terminal() {
         let invalid_label = "NOT A VALID LABEL";
         let expected_invalid =

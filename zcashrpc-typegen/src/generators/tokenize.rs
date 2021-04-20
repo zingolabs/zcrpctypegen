@@ -133,3 +133,66 @@ fn object(
         )),
     }
 }
+
+#[cfg(test)]
+mod unit {
+    use super::*;
+    #[test]
+    fn tokenize_value_string() {
+        let quoted_string = value("some_field", serde_json::json!("String"));
+        assert_eq!(
+            quote!(String).to_string(),
+            quoted_string.unwrap().0.to_string(),
+        );
+    }
+    #[test]
+    fn tokenize_value_number() {
+        let quoted_number = value("some_field", serde_json::json!("Decimal"));
+        assert_eq!(
+            quote!(rust_decimal::Decimal).to_string(),
+            quoted_number.unwrap().0.to_string(),
+        );
+    }
+    #[test]
+    fn tokenize_value_bool() {
+        let quoted_bool = value("some_field", serde_json::json!("bool"));
+        assert_eq!(
+            quote!(bool).to_string(),
+            quoted_bool.unwrap().0.to_string(),
+        );
+    }
+    #[test]
+    fn tokenize_object_simple_unnested() {
+        let quoted_object = value(
+            "somefield",
+            serde_json::json!(
+                {
+                    "inner_a": "String",
+                    "inner_b": "bool",
+                    "inner_c": "Decimal",
+                }
+            ),
+        )
+        .unwrap();
+        assert_eq!(quote!(somefield).to_string(), quoted_object.0.to_string(),);
+        assert_eq!(
+            quoted_object.1[0].to_string(),
+            test_consts::SIMPLE_UNNESTED_RESPONSE,
+        );
+    }
+    #[test]
+    fn test_invalid_annotation_error() {
+        let expected_err = crate::error::QuizfaceAnnotationError::from((
+            crate::error::InvalidAnnotationKind::Null,
+            "foo".to_string(),
+        ));
+        let err = value("foo", serde_json::Value::Null).unwrap_err();
+        assert_eq!(crate::error::TypegenError::Annotation(expected_err), err);
+    }
+    mod test_consts {
+        pub(super) const SIMPLE_UNNESTED_RESPONSE: &str = "# [derive (Debug , \
+    serde :: Deserialize , serde :: Serialize)] pub struct somefield { pub \
+    inner_a : String , pub inner_b : bool , pub inner_c : rust_decimal :: \
+    Decimal , }";
+    }
+}

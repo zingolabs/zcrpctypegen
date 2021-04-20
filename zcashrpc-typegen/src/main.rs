@@ -232,36 +232,6 @@ fn from_file_deserialize(
 
 #[cfg(test)]
 mod unit {
-    mod atomic {
-        use crate::*;
-        #[test]
-        fn tokenize_value_string() {
-            let quoted_string =
-                tokenize::value("some_field", serde_json::json!("String"));
-            assert_eq!(
-                quote!(String).to_string(),
-                quoted_string.unwrap().0.to_string(),
-            );
-        }
-        #[test]
-        fn tokenize_value_number() {
-            let quoted_number =
-                tokenize::value("some_field", serde_json::json!("Decimal"));
-            assert_eq!(
-                quote!(rust_decimal::Decimal).to_string(),
-                quoted_number.unwrap().0.to_string(),
-            );
-        }
-        #[test]
-        fn tokenize_value_bool() {
-            let quoted_bool =
-                tokenize::value("some_field", serde_json::json!("bool"));
-            assert_eq!(
-                quote!(bool).to_string(),
-                quoted_bool.unwrap().0.to_string(),
-            );
-        }
-    }
     mod intermediate {
         use crate::*;
         #[test]
@@ -275,34 +245,8 @@ mod unit {
                 test_consts::GETINFO_RESPONSE
             );
         }
-        #[test]
-        fn tokenize_object_simple_unnested() {
-            let quoted_object = tokenize::value(
-                "somefield",
-                serde_json::json!(
-                    {
-                        "inner_a": "String",
-                        "inner_b": "bool",
-                        "inner_c": "Decimal",
-                    }
-                ),
-            )
-            .unwrap();
-            assert_eq!(
-                quote!(somefield).to_string(),
-                quoted_object.0.to_string(),
-            );
-            assert_eq!(
-                quoted_object.1[0].to_string(),
-                test_consts::SIMPLE_UNNESTED_RESPONSE,
-            );
-        }
-    }
-}
-
-#[cfg(test)]
-mod test_consts {
-    pub(super) const GETINFO_RESPONSE: &str = "# [derive \
+        mod test_consts {
+            pub(super) const GETINFO_RESPONSE: &str = "# [derive \
     (Debug , serde :: Deserialize , serde :: Serialize)] pub struct \
     GetinfoResponse { pub proxy : Option < String > , pub balance : \
     rust_decimal :: Decimal , pub blocks : rust_decimal :: Decimal , pub \
@@ -314,8 +258,6 @@ mod test_consts {
     timeoffset : rust_decimal :: Decimal , pub unlocked_until : rust_decimal \
     :: Decimal , pub version : rust_decimal :: Decimal , pub walletversion : \
     rust_decimal :: Decimal , }";
-    pub(super) const SIMPLE_UNNESTED_RESPONSE: &str = "# [derive (Debug , \
-    serde :: Deserialize , serde :: Serialize)] pub struct somefield { pub \
-    inner_a : String , pub inner_b : bool , pub inner_c : rust_decimal :: \
-    Decimal , }";
+        }
+    }
 }
