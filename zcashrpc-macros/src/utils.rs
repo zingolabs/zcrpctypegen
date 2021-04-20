@@ -105,10 +105,8 @@ impl VisitMut for V {
     }
 }
 pub fn extract_response_idents() -> String {
-    let pathstr = &format!(
-        "{}/zcashrpc-api/src/lib.rs",
-        &std::env::var("OUT_DIR").unwrap()
-    );
+    let pathstr =
+        &format!("{}/zcashrpc-api-lib.rs", &std::env::var("OUT_DIR").unwrap());
     dbg!(&pathstr);
     let raw_rs = std::path::Path::new(pathstr);
     let mut src = String::new();
