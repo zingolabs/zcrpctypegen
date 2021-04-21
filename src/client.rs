@@ -13,7 +13,7 @@ use zcashrpc_api::{
 
 /// A `Client` is used to make multiple requests to a specific zcashd RPC server. Requests are invoked by async methods that correspond to `zcashd` RPC API method names with request-specific parameters. Each such method has an associated response type.
 pub struct Client {
-    inner: utils::InnerCli,
+    inner: utils::ReqwClientWrapper,
 }
 
 impl Client {
@@ -22,7 +22,7 @@ impl Client {
     /// - `authcookie` is the contents of `~/.zcash/.cookie`.
     pub fn new(hostport: String, authcookie: String) -> Client {
         Client {
-            inner: utils::InnerCli::new(hostport, authcookie),
+            inner: utils::ReqwClientWrapper::new(hostport, authcookie),
         }
     }
 
