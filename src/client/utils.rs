@@ -40,36 +40,6 @@ pub fn make_client(regtest: bool) -> crate::Client {
     crate::Client::new(get_zcashd_port(), get_cookie(regtest).unwrap())
 }
 
-/// Contains RPC name and args and id
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct RequestEnvelope {
-    pub(crate) id: u64,
-    pub(crate) method: &'static str,
-    pub(crate) params: Vec<serde_json::Value>,
-}
-
-impl<'a> From<&'a RequestEnvelope> for reqwest::Body {
-    fn from(re: &'a RequestEnvelope) -> reqwest::Body {
-        use serde_json::to_string_pretty;
-
-        reqwest::Body::from(to_string_pretty(re).unwrap())
-    }
-}
-
-impl RequestEnvelope {
-    pub fn wrap(
-        id: u64,
-        method: &'static str,
-        params: Vec<serde_json::Value>,
-    ) -> RequestEnvelope {
-        RequestEnvelope {
-            id: id,
-            method: method,
-            params: params,
-        }
-    }
-}
-
 pub(crate) struct ReqwClientWrapper {
     pub(crate) url: String,
     pub(crate) auth: String,
@@ -100,7 +70,7 @@ impl ReqwClientWrapper {
             self.reqw_client
                 .post(&self.url)
                 .header("Authorization", &self.auth)
-                .body(&RequestEnvelope::wrap(id, method, args))
+                .body(&crate::envelope::RequestEnvelope::seal(id, method, args))
                 .send(),
         )
     }

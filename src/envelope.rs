@@ -1,4 +1,3 @@
-pub use crate::client::utils::RequestEnvelope;
 use crate::{error::ResponseError, ResponseResult};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -48,6 +47,37 @@ impl ResponseEnvelope {
         }
     }
 }
+
+/// Contains RPC name and args and id
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct RequestEnvelope {
+    pub(crate) id: u64,
+    pub(crate) method: &'static str,
+    pub(crate) params: Vec<serde_json::Value>,
+}
+
+impl<'a> From<&'a RequestEnvelope> for reqwest::Body {
+    fn from(re: &'a RequestEnvelope) -> reqwest::Body {
+        use serde_json::to_string_pretty;
+
+        reqwest::Body::from(to_string_pretty(re).unwrap())
+    }
+}
+
+impl RequestEnvelope {
+    pub fn seal(
+        id: u64,
+        method: &'static str,
+        params: Vec<serde_json::Value>,
+    ) -> RequestEnvelope {
+        RequestEnvelope {
+            id: id,
+            method: method,
+            params: params,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     #[test]
@@ -59,6 +89,8 @@ mod test {
             result: Some(serde_json::Value::Bool(true)),
             error: None,
         };
-        test_respenvelope.unseal(5);
+        test_respenvelope.unseal::<bool>(5).expect_err(
+            "This should be an error. Client id and server id are different.",
+        );
     }
 }
