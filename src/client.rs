@@ -50,7 +50,7 @@ impl Client {
             let text = reqresp.text().await?;
             let respenv: ResponseEnvelope =
                 json::parse_value(json::parse_string(text)?)?;
-            let resp = respenv.unwrap(id)?;
+            let resp = respenv.unseal(id)?;
             Ok(resp)
         }
     }

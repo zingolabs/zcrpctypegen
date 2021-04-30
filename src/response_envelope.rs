@@ -11,17 +11,17 @@ pub struct ResponseEnvelope {
 }
 
 impl ResponseEnvelope {
-    pub fn unwrap<R>(self, clientid: u64) -> ResponseResult<R>
+    pub fn unseal<R>(self, clientid: u64) -> ResponseResult<R>
     where
         R: DeserializeOwned,
     {
         use crate::json;
 
-        let jv = self.unwrap_internal(clientid)?;
+        let jv = self.unseal_internal(clientid)?;
         json::parse_value(jv)
     }
 
-    fn unwrap_internal(
+    fn unseal_internal(
         self,
         clientid: u64,
     ) -> ResponseResult<serde_json::Value> {
@@ -51,13 +51,14 @@ impl ResponseEnvelope {
 #[cfg(test)]
 mod test {
     #[test]
-    fn unwrap_internal_right_id() {
+    fn unseal_internal_right_id() {
         dbg!("HELLO HAZEL!");
         use super::*;
-        let test_renvelope = ResponseEnvelope {
+        let test_respenvelope = ResponseEnvelope {
             id: 0 as u64,
             result: Some(serde_json::Value::Bool(true)),
             error: None,
         };
+        test_respenvelope.unseal(5);
     }
 }
