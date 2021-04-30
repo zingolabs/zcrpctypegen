@@ -97,11 +97,11 @@ mod test {
         );
         match violation {
             Error::JsonRpcViolation(JsonRpcViolation::UnexpectedServerId {
-                client,
-                server,
+                client: observed_client_id,
+                server: observed_server_id,
             }) => {
-                assert_eq!(expected_client_id, client);
-                assert_eq!(expected_server_id, server);
+                assert_eq!(expected_client_id, observed_client_id);
+                assert_eq!(expected_server_id, observed_server_id);
             }
             _ => panic!("Unpredicted test state!"),
         }
