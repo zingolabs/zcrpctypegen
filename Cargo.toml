@@ -13,7 +13,6 @@ members = ["zcashrpc-macros", "zcashrpc-typegen"]
 zcashrpc-macros = { path = "zcashrpc-macros" }
 reqwest = { version = "0.10.8", features = ["json"] }
 serde = { version = "*", features = ["derive"] }
-serde_derive = "*"
 serde_json = "*"
 derive_more = "*"
 base64 = "*"
