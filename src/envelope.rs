@@ -80,11 +80,12 @@ impl RequestEnvelope {
 
 #[cfg(test)]
 mod test {
+    use super::*;
     #[test]
     fn unseal_internal_incorrect_id() {
         let expected_client_id = 5;
         let expected_server_id = 0;
-        let test_respenvelope = super::ResponseEnvelope {
+        let test_respenvelope = ResponseEnvelope {
             id: 0 as u64,
             result: Some(serde_json::Value::Bool(true)),
             error: None,
