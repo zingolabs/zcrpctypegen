@@ -93,4 +93,15 @@ mod test {
             "This should be an error. Client id and server id are different.",
         );
     }
+
+    #[test]
+    fn method_and_args_to_reqwest_body() {
+        use super::*;
+        let test_requenvelope = RequestEnvelope::seal(
+            0,
+            "z_listaddresses",
+            vec![serde_json::Value::Bool(true)],
+        );
+        let reqw_body = reqwest::Body::from(&test_requenvelope);
+    }
 }
