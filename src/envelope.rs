@@ -82,21 +82,20 @@ impl RequestEnvelope {
 mod test {
     #[test]
     fn unseal_internal_incorrect_id() {
-        use super::*;
-        use crate::error::JsonRpcViolation;
         let expected_client_id = 5;
         let expected_server_id = 0;
-        let test_respenvelope = ResponseEnvelope {
+        let test_respenvelope = super::ResponseEnvelope {
             id: 0 as u64,
             result: Some(serde_json::Value::Bool(true)),
             error: None,
         };
-        use crate::error::Error;
         let violation = test_respenvelope.unseal_internal(5).expect_err(
             "This should be an error. Client id and server id are different.",
         );
+        use crate::error::Error::JsonRpcViolation as JRVErrVar;
+        use crate::error::JsonRpcViolation;
         match violation {
-            Error::JsonRpcViolation(JsonRpcViolation::UnexpectedServerId {
+            JRVErrVar(JsonRpcViolation::UnexpectedServerId {
                 client: observed_client_id,
                 server: observed_server_id,
             }) => {
