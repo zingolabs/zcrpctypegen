@@ -48,3 +48,10 @@ impl ResponseEnvelope {
         }
     }
 }
+#[cfg(test)]
+mod test {
+    #[test]
+    fn unwrap_internal_right_id() {
+        dbg!("HELLO HAZEL!");
+    }
+}
