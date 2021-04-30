@@ -53,5 +53,11 @@ mod test {
     #[test]
     fn unwrap_internal_right_id() {
         dbg!("HELLO HAZEL!");
+        use super::*;
+        let test_renvelope = ResponseEnvelope {
+            id: 0 as u64,
+            result: Some(serde_json::Value::Bool(true)),
+            error: None,
+        };
     }
 }
