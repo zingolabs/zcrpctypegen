@@ -1,9 +1,9 @@
 //! An asynchronous zcashd RPC client.
 
 pub mod client;
-mod envelope;
 pub mod error;
 mod json;
+mod response_envelope;
 
 #[doc(inline)]
 pub use client::Client;

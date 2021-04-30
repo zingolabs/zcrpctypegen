@@ -42,7 +42,7 @@ impl Client {
     where
         R: DeserializeOwned,
     {
-        use crate::{envelope::ResponseEnvelope, json};
+        use crate::{json, response_envelope::ResponseEnvelope};
 
         let (id, sendfut) = self.inner.procedure_call(method, args);
         async move {
