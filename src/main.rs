@@ -26,6 +26,7 @@ fn main() {
     let mut arguments = std::collections::BTreeMap::new();
     let mut responses = std::collections::BTreeMap::new();
     for filenode in input_files {
+        dbg!(&filenode);
         dispatch_to_processors(filenode, &mut arguments, &mut responses);
     }
     for (name, resp) in responses {
@@ -190,8 +191,9 @@ fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
 const TYPEGEN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 fn output_path() -> std::ffi::OsString {
     use std::ffi::OsString;
-    let in_version = std::fs::read_dir("../../quizface/output/")
-        .expect("Missing interpretations.")
+    let input_dirname = "../quizface/output/";
+    let in_version = std::fs::read_dir(&input_dirname)
+        .expect(&format!("Missing interpretations in {}.", &input_dirname))
         .map(|x| x.unwrap().file_name())
         .collect::<Vec<OsString>>()
         .pop()
