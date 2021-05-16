@@ -1,54 +1,99 @@
-//! The `error` mod includes types representing specific errors which are all bundled into the top-level `Error` enum.
+pub type TypegenResult<T> = Result<T, TypegenError>;
+use derive_more::From as FromWrapped;
 
-use serde::{Deserialize, Serialize};
-
-/// A `ResponseResult<R>` is a convenience type-alias for `Result<R, Error>`.
-pub type ResponseResult<R> = Result<R, Error>;
-
-/// An `Error` represents errors encountered in making an RPC request, and encompasses application-level error responses, protocol errors, and transient failures.
-#[derive(Debug, derive_more::From)]
-pub enum Error {
-    /// A `Response` represents an application-level error sent back from `zcashd`.
-    Response(ResponseError),
-
-    /// An `UnexpectedResponse` occurs when the server sends a successful response which doesn't match this crate's expected structure or types.
-    UnexpectedResponse(UnexpectedResponse),
-
-    /// A `JsonRpcViolation` indicates the `zcashd` server violates this library's expectation about JSONRPC protocol. These should not occur if this crate has thorough integration tests against the specific version of `zcashd` on the server-side.
-    JsonRpcViolation(JsonRpcViolation),
-
-    /// The `Http` variant indicates some HTTP-layer error and passes errors directly from the `reqwest` HTTP client dependency.
-    Http(reqwest::Error),
+#[derive(Debug, FromWrapped)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum TypegenError {
+    Filesystem(FSError),
+    Json(JsonError),
+    Annotation(QuizfaceAnnotationError),
 }
 
-/// The `ResponseError` represents any application-level error sent from `zcashd`.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ResponseError {
-    pub code: i64,
-    pub message: String,
-}
-
-/// An `UnexpectedResponse` occurs when `zcashd` responds with valid JSON that doesn't match the expected types of this crate.
 #[derive(Debug)]
-pub struct UnexpectedResponse {
-    pub structure: serde_json::Value,
-    pub reason: serde_json::Error,
+#[cfg_attr(test, derive(PartialEq))]
+pub struct FSError {
+    message: String,
+    location: Box<std::path::Path>,
 }
 
-/// A `JsonRpcViolation` occurs when `zcashd` responds with malformed JSON or with a response envelope that violates this crate's assumed JSONRPC protocol invariants.
+impl FSError {
+    pub(crate) fn from_io_error(
+        location: &std::path::Path,
+    ) -> Box<dyn Fn(std::io::Error) -> Self + '_> {
+        Box::new(move |err: std::io::Error| Self {
+            message: format!("{:?}", err.kind()),
+            location: Box::from(location),
+        })
+    }
+}
+
 #[derive(Debug)]
-pub enum JsonRpcViolation {
-    MalformedJson {
-        input_text: String,
-        reason: serde_json::Error,
-    },
-    UnexpectedServerId {
-        client: u64,
-        server: u64,
-    },
-    NoResultOrError,
-    ResultAndError {
-        result: serde_json::Value,
-        error: ResponseError,
-    },
+pub struct JsonError {
+    err: serde_json::Error,
+    input: String,
+}
+
+impl JsonError {
+    pub fn from_serde_json_error(
+        err: serde_json::Error,
+        input: String,
+    ) -> Self {
+        Self { err, input }
+    }
+}
+
+#[derive(Debug, FromWrapped)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct QuizfaceAnnotationError {
+    pub kind: InvalidAnnotationKind,
+    pub location: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum InvalidAnnotationKind {
+    Null,
+    Bool(bool),
+    Number(rust_decimal::Decimal),
+    InvalidString(String),
+    EmptyArray,
+    Insufficient,
+}
+
+impl From<serde_json::Value> for InvalidAnnotationKind {
+    fn from(val: serde_json::Value) -> Self {
+        match val {
+            serde_json::Value::Null => Self::Null,
+            serde_json::Value::Bool(b) => Self::Bool(b),
+            serde_json::Value::Number(n) => Self::Number(
+                serde_json::from_str(&n.to_string())
+                    .expect(&format!("Invalid number: {}", n)),
+            ),
+            serde_json::Value::String(s) => Self::InvalidString(s),
+            val => panic!("valid serde_json item {} converted to error", val),
+        }
+    }
+}
+
+#[cfg(test)]
+mod unit {
+    use super::*;
+    macro_rules! compare {
+            ($a:ident, $b:ident: $($f:ident)|*) => {
+                $a.input == $b.input $(&& $a.err.$f() == $b.err.$f())*
+            }
+        }
+
+    impl PartialEq<Self> for JsonError {
+        fn eq(&self, other: &Self) -> bool {
+            compare!(self, other: line | column | classify)
+        }
+    }
+    #[test]
+    fn test_invalid_terminal() {
+        let invalid_label = "NOT A VALID LABEL";
+        let expected_invalid =
+            serde_json::Value::String(invalid_label.to_string());
+        let _iak = InvalidAnnotationKind::from(expected_invalid);
+        //let err = crate::quote_terminal()
+    }
 }

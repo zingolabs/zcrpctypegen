@@ -1,31 +1,12 @@
 [package]
-name = "zcashrpc"
-version = "0.1.0"
-authors = ["noone <noone@nowhere.net>", "Za <zancas@zingolabs.com>", "Gy <gygaxis@zingolabs.com>"]
+name = "zcashrpc_typegen"
+authors = []
+version = "0.2.0"
 edition = "2018"
 
-[workspace]
-members = ["zcashrpc-macros", "zcashrpc-typegen"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-zcashrpc-macros = { path = "zcashrpc-macros" }
-reqwest = { version = "0.10.8", features = ["json"] }
-serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+quote = "1.0.7"
+proc-macro2 = "*"
 derive_more = "*"
-base64 = "*"
-dirs = { version = "*", optional = true }
 rust_decimal = "*"
-zcashrpc-api = { git = "https://github.com/zingolabs/zcashrpc-api.git", branch = "main" }
-
-[dev-dependencies]
-tokio = { version = "0.2.23", features = ["macros"] }
-
-[features]
-default = ["cookie-finder"]
-cookie-finder = ["dirs"]
-
-[[test]]
-name = "zcashrpc-smoke-tests"
