@@ -124,7 +124,7 @@ fn object(
     val: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     let ident = callsite_ident(name);
-    let (case, inner_structs) = generators::structgen(val, name)?;
+    let (case, inner_structs) = generators::namedfield_structgen(val, name)?;
     match case {
         super::utils::FourXs::False => Ok((quote!(#ident), inner_structs)),
         super::utils::FourXs::True => Ok((

@@ -108,7 +108,7 @@ pub(crate) fn inner_enumgen(
     Ok(inner_structs)
 }
 
-pub(crate) fn structgen(
+pub(crate) fn namedfield_structgen(
     inner_nodes: Map<String, Value>,
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
@@ -150,7 +150,7 @@ pub(crate) fn argumentgen(
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let new_nodes = utils::handle_argument_fields_names(inner_nodes);
-    structgen(new_nodes, struct_name)
+    namedfield_structgen(new_nodes, struct_name)
 }
 
 pub(crate) fn alias(

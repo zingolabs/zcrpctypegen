@@ -116,7 +116,8 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
             0 => generators::emptygen(&type_name),
             1 => match arg_sets.pop().unwrap() {
                 serde_json::Value::Object(args) => {
-                    generators::structgen(args, &type_name).map(|x| x.1)?
+                    generators::namedfield_structgen(args, &type_name)
+                        .map(|x| x.1)?
                 }
                 val => generators::alias(val, &type_name)?,
             },
