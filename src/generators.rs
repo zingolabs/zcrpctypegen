@@ -149,8 +149,29 @@ pub(crate) fn argumentgen(
     inner_nodes: Map<String, Value>,
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
-    let new_nodes = utils::handle_argument_fields_names(inner_nodes);
-    namedfield_structgen(new_nodes, struct_name)
+    let ident = callsite_ident(struct_name);
+    let field_data = utils::handle_fields(struct_name, inner_nodes)?;
+    let mut ident_val_tokens = field_data.ident_val_tokens;
+    let body = match field_data.case {
+        utils::FourXs::False => {
+            utils::add_pub_keywords(&mut ident_val_tokens);
+            quote!(
+                pub struct #ident {
+                    #(#ident_val_tokens)*
+                }
+            )
+        }
+        utils::FourXs::True => {
+            return Ok((utils::FourXs::True, field_data.inner_structs));
+        }
+    };
+
+    let mut generated_code = vec![quote!(
+        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        #body
+    )];
+    generated_code.extend(field_data.inner_structs);
+    Ok((utils::FourXs::False, generated_code))
 }
 
 pub(crate) fn alias(

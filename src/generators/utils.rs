@@ -31,62 +31,6 @@ pub(crate) fn handle_options_and_keywords(
     }
 }
 
-fn handle_argument_field_name(field_name: String) -> String {
-    field_name
-        .chars()
-        .map(|a_char| {
-            match a_char.to_string().as_str() {
-                "-" | "_" => "_",
-                "<" => "<",
-                ">" => ">",
-                "|" => "_or_",
-                "1" => "one",
-                "2" => "two",
-                "3" => "three",
-                "4" => "four",
-                "5" => "five",
-                "6" => "six",
-                c if c.chars().next().unwrap().is_alphabetic() => c,
-                c => {
-                    eprintln!(
-                        "WARNING: omitting bad char '{}' in field name '{}'",
-                        c, &field_name
-                    );
-                    ""
-                }
-            }
-            .to_string()
-        })
-        .collect()
-}
-
-pub(crate) fn handle_argument_fields_names(
-    nodes: serde_json::Map<String, serde_json::Value>,
-) -> serde_json::Map<String, serde_json::Value> {
-    nodes
-        .into_iter()
-        .map(|(field_name, val)| {
-            let new_field_name = if field_name.starts_with("Option<") {
-                format!(
-                    "Option<{}>",
-                    handle_argument_field_name(
-                        field_name
-                            .strip_prefix("Option<")
-                            .unwrap()
-                            .strip_suffix(">")
-                            .unwrap()
-                            .to_string()
-                    )
-                )
-            } else {
-                handle_argument_field_name(field_name)
-            };
-
-            (new_field_name, val)
-        })
-        .collect()
-}
-
 pub(crate) fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
     *tokens = tokens
         .into_iter()
