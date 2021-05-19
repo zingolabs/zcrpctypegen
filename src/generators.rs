@@ -52,13 +52,6 @@ pub(crate) fn arguments_enumgen(
     let ident = callsite_ident(enum_name);
     let enum_code: Vec<TokenStream> = inner_nodes
         .into_iter()
-        .map(|value| {
-            if let Value::Object(obj) = value {
-                utils::handle_argument_fields_names(obj)
-            } else {
-                panic!("Not an Object variant!")
-            }
-        })
         .zip(ARGUMENT_VARIANTS.iter())
         .map(|(obj, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
@@ -113,7 +106,7 @@ pub(crate) fn namedfield_structgen(
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let field_data = utils::handle_fields(struct_name, inner_nodes)?;
+    let field_data = utils::handle_named_fields(struct_name, inner_nodes)?;
     let mut ident_val_tokens = field_data.ident_val_tokens;
     let body = match field_data.case {
         utils::FourXs::False => {
@@ -156,9 +149,9 @@ pub(crate) fn argumentgen(
         utils::FourXs::False => {
             utils::add_pub_keywords(&mut ident_val_tokens);
             quote!(
-                pub struct #ident {
+                pub struct #ident (
                     #(#ident_val_tokens)*
-                }
+                )
             )
         }
         utils::FourXs::True => {
@@ -198,7 +191,7 @@ pub(crate) fn variant(
     inner_structs: &mut std::vec::Vec<TokenStream>,
     variant_name_tokens: &proc_macro2::Ident,
 ) -> TypegenResult<TokenStream> {
-    let field_data = utils::handle_fields(enum_name, obj)?;
+    let field_data = utils::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.ident_val_tokens;
     Ok(quote!(

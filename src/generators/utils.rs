@@ -46,7 +46,7 @@ pub(crate) struct FieldsInfo {
     pub(crate) ident_val_tokens: Vec<TokenStream>,
     pub(crate) inner_structs: Vec<TokenStream>,
 }
-pub(crate) fn handle_fields(
+pub(crate) fn handle_named_fields(
     struct_name: &str,
     inner_nodes: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<FieldsInfo> {
