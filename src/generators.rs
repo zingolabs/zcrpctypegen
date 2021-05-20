@@ -21,7 +21,7 @@ pub(crate) fn response_enumgen(
         .map(|(value, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => variant(
+                Value::Object(obj) => struct_variant(
                     enum_name,
                     obj,
                     &mut inner_structs,
@@ -53,9 +53,20 @@ pub(crate) fn arguments_enumgen(
     let enum_code: Vec<TokenStream> = inner_nodes
         .into_iter()
         .zip(ARGUMENT_VARIANTS.iter())
-        .map(|(obj, variant_name)| {
+        .map(|(value, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
-            variant(enum_name, obj, &mut inner_structs, &variant_name_tokens)
+            match value {
+                Value::Object(obj) => tuple_variant(
+                    enum_name,
+                    obj,
+                    &mut inner_structs,
+                    &variant_name_tokens,
+                ),
+                non_object => panic!(
+                    "Fould {} in args",
+                    serde_json::to_string_pretty(&non_object).unwrap()
+                ),
+            }
         })
         .collect::<TypegenResult<Vec<TokenStream>>>()?;
     inner_structs.push(quote!(
@@ -77,7 +88,7 @@ pub(crate) fn inner_enumgen(
         .map(|(value, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => variant(
+                Value::Object(obj) => struct_variant(
                     enum_name,
                     obj,
                     &mut inner_structs,
@@ -143,7 +154,7 @@ pub(crate) fn argumentgen(
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let field_data = utils::handle_fields(struct_name, inner_nodes)?;
+    let field_data = utils::handle_named_fields(struct_name, inner_nodes)?;
     let mut ident_val_tokens = field_data.ident_val_tokens;
     let body = match field_data.case {
         utils::FourXs::False => {
@@ -185,7 +196,21 @@ pub(crate) fn alias(
     Ok(inner_structs)
 }
 
-pub(crate) fn variant(
+fn struct_variant(
+    enum_name: &str,
+    obj: serde_json::Map<String, serde_json::Value>,
+    inner_structs: &mut std::vec::Vec<TokenStream>,
+    variant_name_tokens: &proc_macro2::Ident,
+) -> TypegenResult<TokenStream> {
+    let field_data = utils::handle_named_fields(enum_name, obj)?;
+    inner_structs.extend(field_data.inner_structs);
+    let variant_body_tokens = field_data.ident_val_tokens;
+    Ok(quote!(
+                            #variant_name_tokens {
+                                #(#variant_body_tokens)*
+                            },))
+}
+fn tuple_variant(
     enum_name: &str,
     obj: serde_json::Map<String, serde_json::Value>,
     inner_structs: &mut std::vec::Vec<TokenStream>,
