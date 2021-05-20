@@ -119,7 +119,7 @@ pub(crate) fn namedfield_structgen(
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
     let field_data =
-        fieldinterpreters::handle_named_fields(struct_name, inner_nodes)?;
+        fieldinterpreters::interpret_named_fields(struct_name, inner_nodes)?;
     let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
     let body = match field_data.case {
         utils::FourXs::False => {
@@ -205,7 +205,7 @@ fn build_structvariant(
     inner_structs: &mut std::vec::Vec<TokenStream>,
     variant_ident_token: &proc_macro2::Ident,
 ) -> TypegenResult<TokenStream> {
-    let field_data = fieldinterpreters::handle_named_fields(enum_name, obj)?;
+    let field_data = fieldinterpreters::interpret_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.outerattr_or_identandtype;
     Ok(quote![
