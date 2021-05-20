@@ -85,3 +85,16 @@ pub(crate) fn handle_enumerated_fields(
         inner_structs,
     })
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn handle_options_and_keywords_non_optional_non_keyword() {
+        handle_options_and_keywords(
+            &mut None,
+            &mut "foople".to_string(),
+            &mut false,
+        );
+    }
+}
