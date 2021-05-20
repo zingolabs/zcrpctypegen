@@ -6,7 +6,6 @@ mod tokenize;
 mod utils;
 
 const RESPONSE_VARIANTS: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
-const ARGUMENT_VARIANTS: &[&str] = &["MultiAddress", "Address"];
 
 pub(crate) fn response_enumgen(
     inner_nodes: Vec<Value>,
@@ -48,6 +47,7 @@ pub(crate) fn arguments_enumgen(
     inner_nodes: Vec<Value>,
     enum_name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
+    const ARGUMENT_VARIANTS: &[&str] = &["MultiAddress", "Address"];
     let mut inner_structs = Vec::new();
     let ident = callsite_ident(enum_name);
     let enum_code: Vec<TokenStream> = inner_nodes
