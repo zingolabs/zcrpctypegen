@@ -103,4 +103,18 @@ mod test {
         assert_eq!(observed_field_name, "fooople".to_string());
         assert_eq!(observed_option, false);
     }
+    #[test]
+    fn handle_options_and_keywords_optional_keyword() {
+        let mut observed_serde_rename = None;
+        let mut observed_field_name = "Option<yield>".to_string();
+        let mut observed_option = false;
+        handle_options_and_keywords(
+            &mut observed_serde_rename,
+            &mut observed_field_name,
+            &mut observed_option,
+        );
+        assert!(observed_serde_rename.is_some());
+        assert_eq!(observed_field_name, "yield_field".to_string());
+        assert_eq!(observed_option, true);
+    }
 }
