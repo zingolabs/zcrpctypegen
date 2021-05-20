@@ -70,8 +70,6 @@ pub(crate) fn handle_named_fields(
         );
         field_name = camel_to_under(&field_name);
 
-        //temp_acc needed because destructuring assignments are unstable
-        //see https://github.com/rust-lang/rust/issues/71126 for more info
         let (mut field_type, new_struct, _terminal_enum) =
             super::tokenize::value(&under_to_camel(&field_name), val)?;
         inner_structs.extend(new_struct);
