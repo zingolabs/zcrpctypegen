@@ -72,19 +72,19 @@ pub(crate) fn handle_named_fields(
 
         //temp_acc needed because destructuring assignments are unstable
         //see https://github.com/rust-lang/rust/issues/71126 for more info
-        let (mut tokenized_val, new_struct, _terminal_enum) =
+        let (mut field_type, new_struct, _terminal_enum) =
             super::tokenize::value(&under_to_camel(&field_name), val)?;
         inner_structs.extend(new_struct);
         if option {
             use std::str::FromStr as _;
-            tokenized_val =
-                TokenStream::from_str(&format!("Option<{}>", tokenized_val))
+            field_type =
+                TokenStream::from_str(&format!("Option<{}>", field_type))
                     .unwrap();
         }
 
         let token_ident = callsite_ident(&field_name);
         outerattr_or_identandtype.push(quote!(#serde_rename));
-        outerattr_or_identandtype.push(quote!(#token_ident: #tokenized_val,));
+        outerattr_or_identandtype.push(quote!(#token_ident: #field_type,));
     }
     Ok(FieldsInfo {
         case,
