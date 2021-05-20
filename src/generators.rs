@@ -18,19 +18,19 @@ pub(crate) fn response_enumgen(
         .into_iter()
         .zip(RESPONSE_VARIANTS.iter())
         .map(|(value, variant_name)| {
-            let variant_name_tokens = callsite_ident(&variant_name);
+            let variant_ident_token = callsite_ident(&variant_name);
             match value {
                 Value::Object(obj) => struct_variant(
                     enum_name,
                     obj,
                     &mut inner_structs,
-                    &variant_name_tokens,
+                    &variant_ident_token,
                 ),
                 non_object => {
                     let (variant_body_tokens, new_structs, _terminal_enum) =
                         tokenize::value(&variant_name, non_object)?;
                     inner_structs.extend(new_structs);
-                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
+                    Ok(quote!(#variant_ident_token(#variant_body_tokens),))
                 }
             }
         })
@@ -54,13 +54,13 @@ pub(crate) fn arguments_enumgen(
         .into_iter()
         .zip(ARGUMENT_VARIANTS.iter())
         .map(|(value, variant_name)| {
-            let variant_name_tokens = callsite_ident(&variant_name);
+            let variant_ident_token = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => tuple_variant(
+                Value::Object(obj) => build_argumentenum_tuplevariant(
                     enum_name,
                     obj,
                     &mut inner_structs,
-                    &variant_name_tokens,
+                    &variant_ident_token,
                 ),
                 non_object => panic!(
                     "Fould {} in args",
@@ -86,19 +86,19 @@ pub(crate) fn inner_enumgen(
     let enum_code: Vec<TokenStream> = inner_nodes
         .into_iter()
         .map(|(value, variant_name)| {
-            let variant_name_tokens = callsite_ident(&variant_name);
+            let variant_ident_token = callsite_ident(&variant_name);
             match value {
                 Value::Object(obj) => struct_variant(
                     enum_name,
                     obj,
                     &mut inner_structs,
-                    &variant_name_tokens,
+                    &variant_ident_token,
                 ),
                 non_object => {
                     let (variant_body_tokens, new_structs, _terminal_enum) =
                         tokenize::value(&variant_name, non_object)?;
                     inner_structs.extend(new_structs);
-                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
+                    Ok(quote!(#variant_ident_token(#variant_body_tokens),))
                 }
             }
         })
@@ -200,27 +200,27 @@ fn struct_variant(
     enum_name: &str,
     obj: serde_json::Map<String, serde_json::Value>,
     inner_structs: &mut std::vec::Vec<TokenStream>,
-    variant_name_tokens: &proc_macro2::Ident,
+    variant_ident_token: &proc_macro2::Ident,
 ) -> TypegenResult<TokenStream> {
     let field_data = utils::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.ident_val_tokens;
     Ok(quote!(
-                            #variant_name_tokens {
+                            #variant_ident_token {
                                 #(#variant_body_tokens)*
                             },))
 }
-fn tuple_variant(
+fn build_argumentenum_tuplevariant(
     enum_name: &str,
     obj: serde_json::Map<String, serde_json::Value>,
     inner_structs: &mut std::vec::Vec<TokenStream>,
-    variant_name_tokens: &proc_macro2::Ident,
+    variant_ident_token: &proc_macro2::Ident,
 ) -> TypegenResult<TokenStream> {
     let field_data = utils::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.ident_val_tokens;
     Ok(quote!(
-                            #variant_name_tokens {
+                            #variant_ident_token {
                                 #(#variant_body_tokens)*
                             },))
 }
