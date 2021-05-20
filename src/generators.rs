@@ -20,7 +20,7 @@ pub(crate) fn response_enumgen(
         .map(|(value, variant_name)| {
             let variant_ident_token = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => struct_variant(
+                Value::Object(obj) => build_structvariant(
                     enum_name,
                     obj,
                     &mut inner_structs,
@@ -88,7 +88,7 @@ pub(crate) fn inner_enumgen(
         .map(|(value, variant_name)| {
             let variant_ident_token = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => struct_variant(
+                Value::Object(obj) => build_structvariant(
                     enum_name,
                     obj,
                     &mut inner_structs,
@@ -196,7 +196,7 @@ pub(crate) fn alias(
     Ok(inner_structs)
 }
 
-fn struct_variant(
+fn build_structvariant(
     enum_name: &str,
     obj: serde_json::Map<String, serde_json::Value>,
     inner_structs: &mut std::vec::Vec<TokenStream>,
