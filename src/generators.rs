@@ -118,13 +118,13 @@ pub(crate) fn namedfield_structgen(
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
     let field_data = utils::handle_named_fields(struct_name, inner_nodes)?;
-    let mut ident_val_tokens = field_data.ident_val_tokens;
+    let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
     let body = match field_data.case {
         utils::FourXs::False => {
-            utils::add_pub_keywords(&mut ident_val_tokens);
+            utils::add_pub_keywords(&mut outerattr_or_identandtype);
             quote!(
                 pub struct #ident {
-                    #(#ident_val_tokens)*
+                    #(#outerattr_or_identandtype)*
                 }
             )
         }
@@ -155,13 +155,13 @@ pub(crate) fn argumentgen(
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
     let field_data = utils::handle_named_fields(struct_name, inner_nodes)?;
-    let mut ident_val_tokens = field_data.ident_val_tokens;
+    let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
     let body = match field_data.case {
         utils::FourXs::False => {
-            utils::add_pub_keywords(&mut ident_val_tokens);
+            utils::add_pub_keywords(&mut outerattr_or_identandtype);
             quote!(
                 pub struct #ident (
-                    #(#ident_val_tokens)*
+                    #(#outerattr_or_identandtype)*
                 )
             )
         }
@@ -204,7 +204,7 @@ fn build_structvariant(
 ) -> TypegenResult<TokenStream> {
     let field_data = utils::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
-    let variant_body_tokens = field_data.ident_val_tokens;
+    let variant_body_tokens = field_data.outerattr_or_identandtype;
     Ok(quote!(
                             #variant_ident_token {
                                 #(#variant_body_tokens)*
@@ -218,7 +218,7 @@ fn build_argumentenum_tuplevariant(
 ) -> TypegenResult<TokenStream> {
     let field_data = utils::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
-    let variant_body_tokens = field_data.ident_val_tokens;
+    let variant_body_tokens = field_data.outerattr_or_identandtype;
     Ok(quote!(
                             #variant_ident_token {
                                 #(#variant_body_tokens)*

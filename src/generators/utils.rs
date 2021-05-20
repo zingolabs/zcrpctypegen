@@ -43,14 +43,14 @@ pub(crate) fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
 
 pub(crate) struct FieldsInfo {
     pub(crate) case: super::utils::FourXs,
-    pub(crate) ident_val_tokens: Vec<TokenStream>,
+    pub(crate) outerattr_or_identandtype: Vec<TokenStream>,
     pub(crate) inner_structs: Vec<TokenStream>,
 }
 pub(crate) fn handle_named_fields(
     struct_name: &str,
     inner_nodes: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<FieldsInfo> {
-    let mut ident_val_tokens: Vec<TokenStream> = Vec::new();
+    let mut outerattr_or_identandtype: Vec<TokenStream> = Vec::new();
     let mut inner_structs = Vec::new();
     let mut case = super::utils::FourXs::False;
     for (mut field_name, val) in inner_nodes {
@@ -83,12 +83,12 @@ pub(crate) fn handle_named_fields(
         }
 
         let token_ident = callsite_ident(&field_name);
-        ident_val_tokens.push(quote!(#serde_rename));
-        ident_val_tokens.push(quote!(#token_ident: #tokenized_val,));
+        outerattr_or_identandtype.push(quote!(#serde_rename));
+        outerattr_or_identandtype.push(quote!(#token_ident: #tokenized_val,));
     }
     Ok(FieldsInfo {
         case,
         inner_structs,
-        ident_val_tokens,
+        outerattr_or_identandtype,
     })
 }
