@@ -90,13 +90,17 @@ pub(crate) fn handle_enumerated_fields(
 mod test {
     use super::*;
     #[test]
-    fn hoandle_options_and_keywords_non_optional_non_keyword() {
-        let mut expected_bool = false;
+    fn handle_options_and_keywords_non_optional_non_keyword() {
+        let mut observed_serde_rename = None;
+        let mut observed_field_name = "fooople".to_string();
+        let mut observed_option = false;
         handle_options_and_keywords(
-            &mut None,
-            &mut "foople".to_string(),
-            &mut expected_bool,
+            &mut observed_serde_rename,
+            &mut observed_field_name,
+            &mut observed_option,
         );
-        assert_eq!(expected_bool, false);
+        assert!(observed_serde_rename.is_none());
+        assert_eq!(observed_field_name, "fooople".to_string());
+        assert_eq!(observed_option, false);
     }
 }
