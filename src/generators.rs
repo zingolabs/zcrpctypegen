@@ -205,10 +205,11 @@ fn build_structvariant(
     let field_data = utils::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.outerattr_or_identandtype;
-    Ok(quote!(
-                            #variant_ident_token {
-                                #(#variant_body_tokens)*
-                            },))
+    Ok(quote![
+        #variant_ident_token {
+            #(#variant_body_tokens)*
+        },
+    ])
 }
 fn build_argumentenum_tuplevariant(
     enum_name: &str,
@@ -219,8 +220,9 @@ fn build_argumentenum_tuplevariant(
     let field_data = utils::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.outerattr_or_identandtype;
-    Ok(quote!(
-                            #variant_ident_token {
-                                #(#variant_body_tokens)*
-                            },))
+    Ok(quote![
+        #variant_ident_token {
+            #(#variant_body_tokens)*
+        },
+    ])
 }
