@@ -28,6 +28,16 @@ pub(crate) fn handle_options_and_keywords(
     }
 }
 
+pub(crate) fn handle_option(name_hint: &mut String, option: &mut bool) -> () {
+    if name_hint.starts_with("Option<") {
+        *name_hint = name_hint
+            .trim_end_matches(">")
+            .trim_start_matches("Option<")
+            .to_string();
+        *option = true;
+    }
+}
+
 pub(crate) fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
     *tokens = tokens
         .into_iter()

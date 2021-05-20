@@ -158,20 +158,12 @@ pub(crate) fn argumentgen(
     let ident = callsite_ident(struct_name);
     let field_data =
         fieldinterpreters::handle_enumerated_fields(struct_name, inner_nodes)?;
-    let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
-    let body = match field_data.case {
-        utils::FourXs::False => {
-            utils::add_pub_keywords(&mut outerattr_or_identandtype);
-            quote!(
-                pub struct #ident (
-                    #(#outerattr_or_identandtype)*
-                )
-            )
-        }
-        utils::FourXs::True => {
-            return Ok((utils::FourXs::True, field_data.inner_structs));
-        }
-    };
+    let mut outerattr_or_identandtype = field_data.indexed_type;
+    utils::add_pub_keywords(&mut outerattr_or_identandtype);
+    let body = quote!( pub struct #ident (
+            #(#outerattr_or_identandtype)*
+        )
+    );
 
     let mut generated_code = vec![quote!(
         #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -223,7 +215,7 @@ fn build_argumentenum_tuplevariant(
     let field_data =
         fieldinterpreters::handle_enumerated_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
-    let variant_body_tokens = field_data.outerattr_or_identandtype;
+    let variant_body_tokens = field_data.indexed_type;
     Ok(quote![
         #variant_ident_token (
             #(#variant_body_tokens)*
