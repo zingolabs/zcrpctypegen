@@ -2,6 +2,7 @@ use crate::{utils::callsite_ident, TypegenResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde_json::{Map, Value};
+mod fieldinterpreters;
 mod tokenize;
 mod utils;
 
@@ -117,7 +118,8 @@ pub(crate) fn namedfield_structgen(
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let field_data = utils::handle_named_fields(struct_name, inner_nodes)?;
+    let field_data =
+        fieldinterpreters::handle_named_fields(struct_name, inner_nodes)?;
     let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
     let body = match field_data.case {
         utils::FourXs::False => {
@@ -154,7 +156,8 @@ pub(crate) fn argumentgen(
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let field_data = utils::handle_named_fields(struct_name, inner_nodes)?;
+    let field_data =
+        fieldinterpreters::handle_enumerated_fields(struct_name, inner_nodes)?;
     let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
     let body = match field_data.case {
         utils::FourXs::False => {
@@ -202,7 +205,7 @@ fn build_structvariant(
     inner_structs: &mut std::vec::Vec<TokenStream>,
     variant_ident_token: &proc_macro2::Ident,
 ) -> TypegenResult<TokenStream> {
-    let field_data = utils::handle_named_fields(enum_name, obj)?;
+    let field_data = fieldinterpreters::handle_named_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.outerattr_or_identandtype;
     Ok(quote![
@@ -217,12 +220,13 @@ fn build_argumentenum_tuplevariant(
     inner_structs: &mut std::vec::Vec<TokenStream>,
     variant_ident_token: &proc_macro2::Ident,
 ) -> TypegenResult<TokenStream> {
-    let field_data = utils::handle_named_fields(enum_name, obj)?;
+    let field_data =
+        fieldinterpreters::handle_enumerated_fields(enum_name, obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.outerattr_or_identandtype;
     Ok(quote![
-        #variant_ident_token {
+        #variant_ident_token (
             #(#variant_body_tokens)*
-        },
+        ),
     ])
 }
