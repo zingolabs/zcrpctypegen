@@ -1,5 +1,3 @@
-use crate::utils::{callsite_ident, camel_to_under, under_to_camel};
-use crate::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
 

@@ -3,7 +3,6 @@ use crate::utils::{callsite_ident, camel_to_under, under_to_camel};
 use crate::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
-use serde_json::{Map, Value};
 pub(crate) struct FieldsInfo {
     pub(crate) case: super::utils::FourXs,
     pub(crate) outerattr_or_identandtype: Vec<TokenStream>,
