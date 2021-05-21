@@ -79,4 +79,40 @@ mod test {
         assert_eq!(observed_field_name, "yield_field".to_string());
         assert_eq!(observed_option, true);
     }
+    #[test]
+    fn handle_option_true() {
+        let mut observed_field_name = "Option<struct>".to_string();
+        let mut observed_option = false;
+        handle_option(&mut observed_field_name, &mut observed_option);
+        assert_eq!(observed_field_name, "struct".to_string());
+        assert_eq!(observed_option, true);
+    }
+    #[test]
+    fn handle_option_false() {
+        let mut observed_field_name = "mimblewimble".to_string();
+        let mut observed_option = false;
+        handle_option(&mut observed_field_name, &mut observed_option);
+        assert_eq!(observed_field_name, "mimblewimble".to_string());
+        assert_eq!(observed_option, false);
+    }
+    #[test]
+    fn add_pub_keywords_and_not_to_attrs() {
+        let mut startcode = vec![
+            quote!(field_one: foo,),
+            quote!(field_two: bar,),
+            quote!(#[some_attribute]),
+            quote!(attributed_field: squelch,),
+        ];
+        add_pub_keywords(&mut startcode);
+        let expected_code = quote!(
+            pub field_one: foo,
+            pub field_two: bar,
+            #[some_attribute]
+            pub attributed_field: squelch,
+        );
+        assert_eq!(
+            startcode.into_iter().collect::<TokenStream>().to_string(),
+            expected_code.to_string()
+        );
+    }
 }
