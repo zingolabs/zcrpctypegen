@@ -4,6 +4,8 @@
 mod error;
 mod generators;
 mod utils;
+#[macro_use]
+mod dmacros;
 use error::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -12,6 +14,9 @@ use std::collections::BTreeMap;
 /// Process quizface-formatted response specifications from files, producing
 /// Rust types, in the `rpc_response_types.rs` file.
 fn main() {
+    let x = Some("a");
+    dbg!(x.is_some());
+    shove!(= x.is_some(););
     let initial_comment = r#"//procedurally generated response types, note that zcashrpc-typegen
            //is in early alpha, and output is subject to change at any time.
 "#;
