@@ -58,7 +58,6 @@ pub(crate) fn arguments_enumgen(
             let variant_ident_token = callsite_ident(&variant_name);
             match value {
                 Value::Object(obj) => build_argumentenum_tuplevariant(
-                    enum_name,
                     obj,
                     &mut inner_structs,
                     &variant_ident_token,
@@ -156,8 +155,7 @@ pub(crate) fn argumentgen(
     struct_name: &str,
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
-    let field_data =
-        fieldinterpreters::handle_enumerated_fields(struct_name, inner_nodes)?;
+    let field_data = fieldinterpreters::handle_enumerated_fields(inner_nodes)?;
     let mut outerattr_or_identandtype = field_data.indexed_type;
     utils::add_pub_keywords(&mut outerattr_or_identandtype);
     let body = quote!( pub struct #ident (
@@ -207,13 +205,11 @@ fn build_structvariant(
     ])
 }
 fn build_argumentenum_tuplevariant(
-    enum_name: &str,
     obj: serde_json::Map<String, serde_json::Value>,
     inner_structs: &mut std::vec::Vec<TokenStream>,
     variant_ident_token: &proc_macro2::Ident,
 ) -> TypegenResult<TokenStream> {
-    let field_data =
-        fieldinterpreters::handle_enumerated_fields(enum_name, obj)?;
+    let field_data = fieldinterpreters::handle_enumerated_fields(obj)?;
     inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.indexed_type;
     Ok(quote![

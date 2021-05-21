@@ -57,12 +57,14 @@ pub(crate) struct EnumeratedFieldsInfo {
     pub(crate) inner_structs: Vec<TokenStream>,
 }
 pub(crate) fn handle_enumerated_fields(
-    struct_name: &str,
     inner_nodes: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<EnumeratedFieldsInfo> {
     let mut indexed_type: Vec<TokenStream> = Vec::new();
     let mut inner_structs: Vec<TokenStream> = Vec::new();
-    todo!("inner_nodes has to be ordered by beginning number");
+    //Bypass unreachable code warning
+    if true {
+        todo!("inner_nodes has to be ordered by beginning number");
+    }
     for (mut name_hint, val) in inner_nodes {
         let mut option = false;
         handle_option(&mut name_hint, &mut option);
