@@ -288,6 +288,6 @@ mod test {
     #[should_panic(expected = "Received {}, expected array")]
     fn process_response_non_array_body() {
         let fake_file_path = todo!();
-        let process_response(fake_file_path);
+        let observed_pr_result = process_response(fake_file_path);
     }
 }
