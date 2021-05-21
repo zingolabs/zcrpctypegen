@@ -263,3 +263,11 @@ mod unit {
         }
     }
 }
+
+#[allow(warnings)]
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn dispatch_to_processors_invalid_utf8_in_fn() {}
+}
