@@ -27,7 +27,11 @@ fn call_test(test_name: &str) {
         ])
         .output()
         .expect("cargo run failed");
-    assert!(output.status.success(), "{:#?}", output);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     let expected = std::fs::read_to_string(format!(
         "./tests/data/expected/{}.rs",
