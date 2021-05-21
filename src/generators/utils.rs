@@ -9,14 +9,14 @@ pub(crate) enum FourXs {
 pub(crate) fn handle_options_and_keywords(
     serde_rename: &mut Option<TokenStream>,
     field_name: &mut String,
-    option: &mut bool,
+    optional: &mut bool,
 ) -> () {
     if field_name.starts_with("Option<") {
         *field_name = field_name
             .trim_end_matches(">")
             .trim_start_matches("Option<")
             .to_string();
-        *option = true;
+        *optional = true;
     }
     if crate::utils::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
         *serde_rename = Some(
@@ -28,13 +28,13 @@ pub(crate) fn handle_options_and_keywords(
     }
 }
 
-pub(crate) fn handle_option(name_hint: &mut String, option: &mut bool) -> () {
+pub(crate) fn handle_option(name_hint: &mut String, optional: &mut bool) -> () {
     if name_hint.starts_with("Option<") {
         *name_hint = name_hint
             .trim_end_matches(">")
             .trim_start_matches("Option<")
             .to_string();
-        *option = true;
+        *optional = true;
     }
 }
 
@@ -81,18 +81,18 @@ mod test {
     }
     #[test]
     fn handle_option_true() {
-        let mut observed_field_name = "Option<struct>".to_string();
+        let mut observed_name_hint = "Option<struct>".to_string();
         let mut observed_option = false;
-        handle_option(&mut observed_field_name, &mut observed_option);
-        assert_eq!(observed_field_name, "struct".to_string());
+        handle_option(&mut observed_name_hint, &mut observed_option);
+        assert_eq!(observed_name_hint, "struct".to_string());
         assert_eq!(observed_option, true);
     }
     #[test]
     fn handle_option_false() {
-        let mut observed_field_name = "mimblewimble".to_string();
+        let mut observed_name_hint = "mimblewimble".to_string();
         let mut observed_option = false;
-        handle_option(&mut observed_field_name, &mut observed_option);
-        assert_eq!(observed_field_name, "mimblewimble".to_string());
+        handle_option(&mut observed_name_hint, &mut observed_option);
+        assert_eq!(observed_name_hint, "mimblewimble".to_string());
         assert_eq!(observed_option, false);
     }
     #[test]

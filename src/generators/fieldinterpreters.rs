@@ -24,18 +24,18 @@ pub(crate) fn interpret_named_fields(
         }
 
         let mut serde_rename = None;
-        let mut option = false;
+        let mut optional = false;
         handle_options_and_keywords(
             &mut serde_rename,
             &mut field_name,
-            &mut option,
+            &mut optional,
         );
         field_name = camel_to_under(&field_name);
 
         let (mut field_type, new_structs, _terminal_enum) =
             super::tokenize::value(&under_to_camel(&field_name), val)?;
         inner_structs.extend(new_structs);
-        if option {
+        if optional {
             use std::str::FromStr as _;
             field_type =
                 TokenStream::from_str(&format!("Option<{}>", field_type))
@@ -66,14 +66,14 @@ pub(crate) fn handle_enumerated_fields(
         todo!("inner_nodes has to be ordered by beginning number");
     }
     for (mut name_hint, val) in inner_nodes {
-        let mut option = false;
-        handle_option(&mut name_hint, &mut option);
+        let mut optional = false;
+        handle_option(&mut name_hint, &mut optional);
         name_hint = camel_to_under(&name_hint);
 
         let (mut field_type, new_struct, _terminal_enum) =
             super::tokenize::value(&under_to_camel(&name_hint), val)?;
         inner_structs.extend(new_struct);
-        if option {
+        if optional {
             use std::str::FromStr as _;
             field_type =
                 TokenStream::from_str(&format!("Option<{}>", field_type))
