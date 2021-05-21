@@ -22,17 +22,21 @@ fn call_test(test_name: &str) {
     let output = std::process::Command::new("cargo")
         .args(&[
             "run",
-            &format!("./tests/data/{}", test_name),
-            &format!("./tests/observed/{}.rs", test_name),
+            &format!("./tests/data/input/{}", test_name),
+            &format!("./tests/data/observed/{}.rs", test_name),
         ])
         .output()
         .expect("cargo run failed");
     assert!(output.status.success(), "{:#?}", output);
 
-    let expected =
-        std::fs::read_to_string(format!("./tests/expected/{}.rs", test_name));
-    let observed =
-        std::fs::read_to_string(format!("./tests/observed/{}.rs", test_name));
+    let expected = std::fs::read_to_string(format!(
+        "./tests/data/expected/{}.rs",
+        test_name
+    ));
+    let observed = std::fs::read_to_string(format!(
+        "./tests/data/observed/{}.rs",
+        test_name
+    ));
     let expected = expected.unwrap();
     let observed = observed.unwrap();
     assert_eq!(
@@ -40,5 +44,6 @@ fn call_test(test_name: &str) {
         "\n===Custom Format Follows===\nEXPECTED:\n{}\nOBSERVED:\n{}",
         expected, observed
     );
-    std::fs::remove_file(format!("./tests/observed/{}.rs", test_name)).unwrap();
+    std::fs::remove_file(format!("./tests/data/observed/{}.rs", test_name))
+        .unwrap();
 }
