@@ -27,7 +27,7 @@ fn call_test(test_name: &str) {
         ])
         .output()
         .expect("cargo run failed");
-    assert!(output.status.success());
+    assert!(output.status.success(), "{:#?}", output);
 
     let expected = std::fs::read_to_string(format!(
         "./test_output/{}_expected.rs",
