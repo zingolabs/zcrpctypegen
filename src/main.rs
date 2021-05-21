@@ -26,7 +26,6 @@ fn main() {
     let mut arguments = std::collections::BTreeMap::new();
     let mut responses = std::collections::BTreeMap::new();
     for filenode in input_files {
-        dbg!(&filenode);
         dispatch_to_processors(filenode, &mut arguments, &mut responses);
     }
     for (name, resp) in responses {
