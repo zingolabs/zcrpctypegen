@@ -17,9 +17,9 @@ fn main() {
 "#;
     std::fs::write(output_path(), initial_comment).unwrap();
     let input_files = std::fs::read_dir(&std::path::Path::new(
-        &std::env::args()
-            .nth(1)
-            .unwrap_or("./example_dir".to_string()),
+        &std::env::args().nth(1).expect(
+            "Please pass an input directory of quizface interpretations.",
+        ),
     ))
     .unwrap()
     .map(Result::unwrap);

@@ -3,3 +3,4 @@
 **/*.rs.bk
 /zcashrpc-typegen/output.rs
 tags
+output/*
