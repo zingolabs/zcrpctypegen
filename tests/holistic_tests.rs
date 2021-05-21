@@ -27,15 +27,20 @@ fn call_test(test_name: &str) {
         ])
         .output()
         .expect("cargo run failed");
-    dbg!(&output);
     assert!(output.status.success());
 
-    let output =
-        std::fs::read_to_string(format!("./test_output/{}.rs", test_name));
     let expected = std::fs::read_to_string(format!(
         "./test_output/{}_expected.rs",
         test_name
     ));
-    assert_eq!(output.unwrap(), expected.unwrap());
+    let observed =
+        std::fs::read_to_string(format!("./test_output/{}.rs", test_name));
+    let expected = expected.unwrap();
+    let observed = observed.unwrap();
+    assert_eq!(
+        expected, observed,
+        "\n===Custom Format Follows===\nEXPECTED:\n{}\nOBSERVED:\n{}",
+        expected, observed
+    );
     std::fs::remove_file(format!("./test_output/{}.rs", test_name)).unwrap();
 }
