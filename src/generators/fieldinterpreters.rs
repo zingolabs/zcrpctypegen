@@ -87,3 +87,11 @@ pub(crate) fn handle_enumerated_fields(
         inner_structs,
     })
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[ignore]
+    #[test]
+    fn handle_enumerated_fields_() {}
+}

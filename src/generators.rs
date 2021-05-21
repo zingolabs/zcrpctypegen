@@ -221,6 +221,11 @@ fn build_argumentenum_tuplevariant(
 
 #[cfg(test)]
 mod test {
+    mod build_argumentenum_tuplevariant {
+        #[ignore]
+        #[test]
+        fn happy() {}
+    }
     mod emptygen {
         #[ignore]
         #[test]
