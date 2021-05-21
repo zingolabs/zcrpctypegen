@@ -268,6 +268,13 @@ mod unit {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[ignore]
     #[test]
     fn dispatch_to_processors_invalid_utf8_in_fn() {}
+    #[ignore]
+    #[test]
+    fn dispatch_to_processors_invalid_fn_end() {}
+    #[ignore]
+    #[test]
+    fn from_file_deserialize_invalid_file_path() {}
 }
