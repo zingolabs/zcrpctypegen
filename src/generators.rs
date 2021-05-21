@@ -218,3 +218,18 @@ fn build_argumentenum_tuplevariant(
         ),
     ])
 }
+
+#[cfg(test)]
+mod test {
+    mod emptygen {
+        #[ignore]
+        #[test]
+        fn happy_path() {}
+        #[ignore]
+        #[test]
+        fn keyword_struct_name() {}
+        #[ignore]
+        #[test]
+        fn invalid_ident_chars_in_struct_name() {}
+    }
+}

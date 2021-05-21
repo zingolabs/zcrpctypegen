@@ -287,6 +287,7 @@ mod test {
     #[test]
     #[should_panic(expected = "Received {}, expected array")]
     fn process_response_non_array_body() {
+        //! This logic is (or was) duplicated in process_arguments
         let fake_file_path = todo!();
         let observed_pr_result = process_response(fake_file_path);
     }
