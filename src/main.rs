@@ -277,4 +277,17 @@ mod test {
     #[ignore]
     #[test]
     fn from_file_deserialize_invalid_file_path() {}
+    #[ignore]
+    #[test]
+    fn from_file_deserialize_invalid_file_body() {}
+    #[ignore]
+    #[test]
+    fn get_data_no_json_suffix() {}
+    #[ignore]
+    #[test]
+    #[should_panic(expected = "Received {}, expected array")]
+    fn process_response_non_array_body() {
+        let fake_file_path = todo!();
+        let process_response(fake_file_path);
+    }
 }
