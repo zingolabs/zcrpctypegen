@@ -4,3 +4,4 @@
 /zcashrpc-typegen/output.rs
 tags
 output/*
+tests/data/observed
