@@ -189,7 +189,7 @@ fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
 /// This function provides input for the OS interface that we access via
 /// std::process, and std::fs.
 const TYPEGEN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
-fn output_path() -> std::ffi::OsString {
+fn output_path() -> std::path::PathBuf {
     use std::ffi::OsString;
     let input_dirname = "../quizface/output/";
     let in_version = std::fs::read_dir(&input_dirname)
@@ -205,14 +205,11 @@ fn output_path() -> std::ffi::OsString {
             .expect("Couldn't get String from OsString."),
         TYPEGEN_VERSION
     );
-    let outpath = std::path::Path::new(&outstring);
+    let outname = std::env::args().nth(2).unwrap_or(outstring);
+    let outpath = std::path::Path::new(&outname);
     std::fs::create_dir_all(outpath.parent().expect("Couldn't create parent."))
         .expect("Couldn't create outdir.");
-    std::ffi::OsString::from(
-        std::env::args()
-            .nth(2)
-            .unwrap_or(outpath.to_str().unwrap().into()),
-    )
+    outpath.to_path_buf()
 }
 
 /// Handles data access from fs location through deserialization
