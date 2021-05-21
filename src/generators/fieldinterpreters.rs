@@ -52,6 +52,7 @@ pub(crate) fn interpret_named_fields(
         outerattr_or_identandtype,
     })
 }
+#[derive(Debug)]
 pub(crate) struct EnumeratedFieldsInfo {
     pub(crate) indexed_type: Vec<TokenStream>,
     pub(crate) inner_structs: Vec<TokenStream>,
@@ -62,9 +63,6 @@ pub(crate) fn handle_enumerated_fields(
     let mut indexed_type: Vec<TokenStream> = Vec::new();
     let mut inner_structs: Vec<TokenStream> = Vec::new();
     //Bypass unreachable code warning
-    if true {
-        todo!("inner_nodes has to be ordered by beginning number");
-    }
     for (mut name_hint, val) in inner_nodes {
         let mut optional = false;
         handle_option(&mut name_hint, &mut optional);
@@ -91,7 +89,22 @@ pub(crate) fn handle_enumerated_fields(
 #[cfg(test)]
 mod test {
     use super::*;
-    #[ignore]
     #[test]
-    fn handle_enumerated_fields_() {}
+    fn handle_enumerated_fields_() {
+        use serde_json::{json, Map, Value};
+        let mut input_inner_nodes = Map::<String, Value>::new();
+        input_inner_nodes
+            .insert("1_anarg".to_string(), json!("String".to_string()));
+
+        let expected_output = EnumeratedFieldsInfo {
+            indexed_type: vec![],
+            inner_structs: vec![],
+        };
+        let observed_output =
+            handle_enumerated_fields(input_inner_nodes).unwrap();
+        assert_eq!(
+            expected_output.inner_structs[0].to_string(),
+            observed_output.inner_structs[0].to_string()
+        );
+    }
 }
