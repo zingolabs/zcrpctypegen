@@ -29,17 +29,17 @@ fn main() {
         dispatch_to_processors(filenode, &mut arguments, &mut responses);
     }
     for (name, resp) in responses {
-        let mod_name = utils::get_mod_name(&name);
         let args = arguments.remove(&name);
+        if args.is_none() {
+            panic!("WARNING: No arguments found for '{}'", name)
+        }
+        let mod_name = utils::get_mod_name(&name);
         write_output_to_file(quote!(
             pub mod #mod_name {
                 #args
                 #resp
             }
         ));
-        if args.is_none() {
-            eprintln!("WARNING: No arguments found for '{}'", name)
-        }
     }
     for (name, _resp) in arguments {
         match name.as_str() {
