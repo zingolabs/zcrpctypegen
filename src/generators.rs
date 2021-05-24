@@ -220,20 +220,39 @@ fn build_argumentenum_tuplevariant(
 
 #[cfg(test)]
 mod test {
+    use super::*;
     mod build_argumentenum_tuplevariant {
         #[ignore]
         #[test]
         fn happy() {}
     }
     mod emptygen {
+        use super::*;
+        #[test]
+        fn happy_path() {
+            let observed_empty_struct_vec = emptygen("InsertNameHere");
+            assert_eq!(1, observed_empty_struct_vec.len());
+            let observed_empty_struct = &observed_empty_struct_vec[0];
+            let expected_empty_struct = quote!(
+                #[derive(Debug, serde::Deserialize, serde::Serialize)]
+                pub struct InsertNameHere;
+            );
+            assert_eq!(
+                expected_empty_struct.to_string(),
+                observed_empty_struct.to_string()
+            );
+        }
         #[ignore]
         #[test]
-        fn happy_path() {}
-        #[ignore]
+        fn keyword_struct_name() {
+            //! Keyword checking happens before emptygen is called.
+        }
         #[test]
-        fn keyword_struct_name() {}
-        #[ignore]
-        #[test]
-        fn invalid_ident_chars_in_struct_name() {}
+        #[should_panic(expected = "\"1nvalid\" is not a valid Ident")]
+        fn invalid_ident_chars_in_struct_name() {
+            //! callsite_ident currently panics on invalid Idents.
+            //! Maybe we should change this.
+            let _observed_empty_struct_vec = emptygen("1nvalid");
+        }
     }
 }
