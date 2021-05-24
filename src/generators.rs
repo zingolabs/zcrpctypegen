@@ -21,12 +21,15 @@ pub(crate) fn response_enumgen(
         .map(|(value, variant_name)| {
             let variant_ident_token = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => build_structvariant(
-                    enum_name,
-                    obj,
-                    &mut inner_structs,
-                    &variant_ident_token,
-                ),
+                Value::Object(obj) => {
+                    let (variant, new_structs) = build_structvariant(
+                        enum_name,
+                        obj,
+                        &variant_ident_token,
+                    )?;
+                    inner_structs.extend(new_structs);
+                    Ok(variant)
+                }
                 non_object => {
                     let (variant_body_tokens, new_structs, _terminal_enum) =
                         tokenize::value(&variant_name, non_object)?;
@@ -49,26 +52,32 @@ pub(crate) fn arguments_enumgen(
     enum_name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
     const ARGUMENT_VARIANTS: &[&str] = &["MultiAddress", "Address"];
-    let mut inner_structs = Vec::new();
     let ident = callsite_ident(enum_name);
-    let enum_code: Vec<TokenStream> = inner_nodes
+    let (enum_code, mut inner_structs) = inner_nodes
         .into_iter()
         .zip(ARGUMENT_VARIANTS.iter())
         .map(|(value, variant_name)| {
             let variant_ident_token = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => build_argumentenum_tuplevariant(
-                    obj,
-                    &mut inner_structs,
-                    &variant_ident_token,
-                ),
+                Value::Object(obj) => {
+                    build_argumentenum_tuplevariant(obj, &variant_ident_token)
+                }
                 non_object => panic!(
                     "Fould {} in args",
                     serde_json::to_string_pretty(&non_object).unwrap()
                 ),
             }
         })
-        .collect::<TypegenResult<Vec<TokenStream>>>()?;
+        .try_fold::<_, _, TypegenResult<_>>(
+            (Vec::new(), Vec::new()),
+            |(mut collected_variants, mut collected_new_structs),
+             variant_and_new_structs| {
+                let (variant, new_structs) = variant_and_new_structs?;
+                collected_variants.push(variant);
+                collected_new_structs.extend(new_structs);
+                Ok((collected_variants, collected_new_structs))
+            },
+        )?;
     inner_structs.push(quote!(
             #[derive(Debug, serde::Deserialize, serde::Serialize)]
             pub enum #ident {
@@ -88,12 +97,15 @@ pub(crate) fn inner_enumgen(
         .map(|(value, variant_name)| {
             let variant_ident_token = callsite_ident(&variant_name);
             match value {
-                Value::Object(obj) => build_structvariant(
-                    enum_name,
-                    obj,
-                    &mut inner_structs,
-                    &variant_ident_token,
-                ),
+                Value::Object(obj) => {
+                    let (variant, new_structs) = build_structvariant(
+                        enum_name,
+                        obj,
+                        &variant_ident_token,
+                    )?;
+                    inner_structs.extend(new_structs);
+                    Ok(variant)
+                }
                 non_object => {
                     let (variant_body_tokens, new_structs, _terminal_enum) =
                         tokenize::value(&variant_name, non_object)?;
@@ -191,31 +203,33 @@ pub(crate) fn alias(
 fn build_structvariant(
     enum_name: &str,
     obj: serde_json::Map<String, serde_json::Value>,
-    inner_structs: &mut std::vec::Vec<TokenStream>,
     variant_ident_token: &proc_macro2::Ident,
-) -> TypegenResult<TokenStream> {
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     let field_data = fieldinterpreters::interpret_named_fields(enum_name, obj)?;
-    inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.outerattr_or_identandtype;
-    Ok(quote![
-        #variant_ident_token {
-            #(#variant_body_tokens)*
-        },
-    ])
+    Ok((
+        quote![
+            #variant_ident_token {
+                #(#variant_body_tokens)*
+            },
+        ],
+        field_data.inner_structs,
+    ))
 }
 fn build_argumentenum_tuplevariant(
     obj: serde_json::Map<String, serde_json::Value>,
-    inner_structs: &mut std::vec::Vec<TokenStream>,
     variant_ident_token: &proc_macro2::Ident,
-) -> TypegenResult<TokenStream> {
+) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     let field_data = fieldinterpreters::handle_enumerated_fields(obj)?;
-    inner_structs.extend(field_data.inner_structs);
     let variant_body_tokens = field_data.indexed_type;
-    Ok(quote![
-        #variant_ident_token (
-            #(#variant_body_tokens)*
-        ),
-    ])
+    Ok((
+        quote![
+            #variant_ident_token (
+                #(#variant_body_tokens)*
+            ),
+        ],
+        field_data.inner_structs,
+    ))
 }
 
 #[cfg(test)]
