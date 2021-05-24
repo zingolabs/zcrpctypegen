@@ -52,15 +52,22 @@ pub(crate) fn arguments_enumgen(
     enum_name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
     const ARGUMENT_VARIANTS: &[&str] = &["MultiAddress", "Address"];
+    let mut inner_structs = Vec::new();
     let ident = callsite_ident(enum_name);
-    let (enum_code, mut inner_structs) = inner_nodes
+    let enum_code = inner_nodes
         .into_iter()
         .zip(ARGUMENT_VARIANTS.iter())
         .map(|(value, variant_name)| {
             let variant_ident_token = callsite_ident(&variant_name);
             match value {
                 Value::Object(obj) => {
-                    build_argumentenum_tuplevariant(obj, &variant_ident_token)
+                    let (variant, new_structs) =
+                        build_argumentenum_tuplevariant(
+                            obj,
+                            &variant_ident_token,
+                        )?;
+                    inner_structs.extend(new_structs);
+                    Ok(variant)
                 }
                 non_object => panic!(
                     "Fould {} in args",
@@ -68,16 +75,7 @@ pub(crate) fn arguments_enumgen(
                 ),
             }
         })
-        .try_fold::<_, _, TypegenResult<_>>(
-            (Vec::new(), Vec::new()),
-            |(mut collected_variants, mut collected_new_structs),
-             variant_and_new_structs| {
-                let (variant, new_structs) = variant_and_new_structs?;
-                collected_variants.push(variant);
-                collected_new_structs.extend(new_structs);
-                Ok((collected_variants, collected_new_structs))
-            },
-        )?;
+        .collect::<TypegenResult<Vec<TokenStream>>>()?;
     inner_structs.push(quote!(
             #[derive(Debug, serde::Deserialize, serde::Serialize)]
             pub enum #ident {
