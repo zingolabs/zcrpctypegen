@@ -156,11 +156,10 @@ pub(crate) fn argumentgen(
 ) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
     let field_data = fieldinterpreters::handle_enumerated_fields(inner_nodes)?;
-    let mut outerattr_or_identandtype = field_data.indexed_type;
-    utils::add_pub_keywords(&mut outerattr_or_identandtype);
+    let field_type = field_data.indexed_type;
     let body = quote!( pub struct #ident (
-            #(#outerattr_or_identandtype)*
-        )
+            #(#field_type)*
+        );
     );
 
     let mut generated_code = vec![quote!(

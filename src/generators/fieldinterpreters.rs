@@ -1,4 +1,6 @@
-use crate::generators::utils::{handle_option, handle_options_and_keywords};
+use crate::generators::utils::{
+    handle_option, handle_options_and_keywords, sort_nodes,
+};
 use crate::utils::{callsite_ident, camel_to_under, under_to_camel};
 use crate::TypegenResult;
 use proc_macro2::TokenStream;
@@ -62,10 +64,14 @@ pub(crate) fn handle_enumerated_fields(
 ) -> TypegenResult<EnumeratedFieldsInfo> {
     let mut indexed_type: Vec<TokenStream> = Vec::new();
     let mut inner_structs: Vec<TokenStream> = Vec::new();
-    //Bypass unreachable code warning
-    for (mut name_hint, val) in inner_nodes {
+    let inner_nodes_sorted = sort_nodes(inner_nodes);
+    for (mut name_hint, val) in inner_nodes_sorted {
         let mut optional = false;
         handle_option(&mut name_hint, &mut optional);
+        match name_hint.parse::<u8>() {
+            Ok(_) => name_hint.insert_str(0, "Arg"),
+            Err(_) => name_hint = name_hint[2..].to_string(),
+        }
         name_hint = camel_to_under(&name_hint);
 
         let (mut field_type, new_struct, _terminal_enum) =
@@ -97,14 +103,14 @@ mod test {
             .insert("1_anarg".to_string(), json!("String".to_string()));
 
         let expected_output = EnumeratedFieldsInfo {
-            indexed_type: vec![],
+            indexed_type: vec![quote!(String,)],
             inner_structs: vec![],
         };
         let observed_output =
             handle_enumerated_fields(input_inner_nodes).unwrap();
         assert_eq!(
-            expected_output.inner_structs[0].to_string(),
-            observed_output.inner_structs[0].to_string()
+            expected_output.indexed_type[0].to_string(),
+            observed_output.indexed_type[0].to_string()
         );
     }
 }

@@ -1,5 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
+use serde_json::{Map, Value};
 
 pub(crate) enum FourXs {
     False,
@@ -46,6 +47,12 @@ pub(crate) fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
             _ => quote!(pub #ts),
         })
         .collect();
+}
+
+pub(super) fn sort_nodes(nodes: Map<String, Value>) -> Vec<(String, Value)> {
+    let mut nodes_as_vec = nodes.into_iter().collect::<Vec<(String, Value)>>();
+    nodes_as_vec.sort_by(|(key1, _), (key2, _)| key1.cmp(&key2));
+    nodes_as_vec
 }
 
 #[cfg(test)]
