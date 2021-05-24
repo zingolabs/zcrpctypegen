@@ -234,9 +234,24 @@ fn build_argumentenum_tuplevariant(
 mod test {
     use super::*;
     mod build_argumentenum_tuplevariant {
-        #[ignore]
         #[test]
-        fn happy() {}
+        fn happy() {
+            use super::*;
+            use serde_json::json;
+            let mut fields = Map::new();
+            let ident = callsite_ident("InsertNameHere");
+            fields.insert("2_bar".to_string(), json!("Decimal"));
+            fields.insert("1_foo".to_string(), json!("String"));
+            let (observed_unnested_tuple_enum_variant, new_structs) =
+                build_argumentenum_tuplevariant(fields, &ident).unwrap();
+            assert!(new_structs.is_empty());
+            let expected_unnested_tuple_enum_variant =
+                quote!(InsertNameHere(String, rust_decimal::Decimal,),);
+            assert_eq!(
+                expected_unnested_tuple_enum_variant.to_string(),
+                observed_unnested_tuple_enum_variant.to_string()
+            );
+        }
     }
     mod emptygen {
         use super::*;
