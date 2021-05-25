@@ -125,12 +125,13 @@ fn object(
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
     let ident = callsite_ident(name);
     let (case, inner_structs) = generators::namedfield_structgen(val, name)?;
-    match case {
-        super::utils::FourXs::False => Ok((quote!(#ident), inner_structs)),
-        super::utils::FourXs::True => Ok((
+    if case {
+        Ok((
             quote!(std::collections::HashMap<String, #ident>),
             inner_structs,
-        )),
+        ))
+    } else {
+        Ok((quote!(#ident), inner_structs))
     }
 }
 

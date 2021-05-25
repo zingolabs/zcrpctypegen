@@ -4,7 +4,6 @@ use quote::quote;
 use serde_json::{Map, Value};
 mod fieldinterpreters;
 mod tokenize;
-mod utils;
 
 const RESPONSE_VARIANTS: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
 
@@ -132,26 +131,24 @@ fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
         .collect();
 }
 
+type FourXs = bool;
 pub(crate) fn namedfield_structgen(
     inner_nodes: Map<String, Value>,
     struct_name: &str,
-) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
+) -> TypegenResult<(FourXs, Vec<TokenStream>)> {
     let ident = callsite_ident(struct_name);
     let field_data =
         fieldinterpreters::interpret_named_fields(struct_name, inner_nodes)?;
     let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
-    let body = match field_data.case {
-        utils::FourXs::False => {
-            add_pub_keywords(&mut outerattr_or_identandtype);
-            quote!(
-                pub struct #ident {
-                    #(#outerattr_or_identandtype)*
-                }
-            )
-        }
-        utils::FourXs::True => {
-            return Ok((utils::FourXs::True, field_data.inner_structs));
-        }
+    let body = if !field_data.case {
+        add_pub_keywords(&mut outerattr_or_identandtype);
+        quote!(
+            pub struct #ident {
+                #(#outerattr_or_identandtype)*
+            }
+        )
+    } else {
+        return Ok((true, field_data.inner_structs));
     };
 
     let mut generated_code = vec![quote!(
@@ -159,7 +156,7 @@ pub(crate) fn namedfield_structgen(
         #body
     )];
     generated_code.extend(field_data.inner_structs);
-    Ok((utils::FourXs::False, generated_code))
+    Ok((false, generated_code))
 }
 
 pub(crate) fn emptygen(struct_name: &str) -> Vec<TokenStream> {

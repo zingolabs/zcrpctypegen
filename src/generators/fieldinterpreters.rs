@@ -44,7 +44,7 @@ fn sort_nodes(nodes: Map<String, Value>) -> Vec<(String, Value)> {
 }
 
 pub(crate) struct NamedFieldsInfo {
-    pub(crate) case: super::utils::FourXs,
+    pub(crate) case: super::FourXs,
     pub(crate) outerattr_or_identandtype: Vec<TokenStream>,
     pub(crate) inner_structs: Vec<TokenStream>,
 }
@@ -54,12 +54,12 @@ pub(crate) fn interpret_named_fields(
 ) -> TypegenResult<NamedFieldsInfo> {
     let mut outerattr_or_identandtype: Vec<TokenStream> = Vec::new();
     let mut inner_structs = Vec::new();
-    let mut case = super::utils::FourXs::False;
+    let mut case = false;
     for (mut field_name, val) in inner_nodes {
         //special case handling
         if &field_name == "xxxx" {
             inner_structs = super::tokenize::value(struct_name, val)?.1; // .0 unused
-            case = super::utils::FourXs::True;
+            case = true;
             break;
         }
 
