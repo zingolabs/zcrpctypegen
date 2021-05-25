@@ -2,7 +2,7 @@
 //is in early alpha, and output is subject to change at any time.
 pub mod z_gettreestate {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct ZettreestateArguments(String);
+    pub struct ZGettreestateArguments(String);
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Commitments {
         pub final_root: String,
