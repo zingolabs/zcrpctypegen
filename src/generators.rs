@@ -163,7 +163,7 @@ pub(crate) fn emptygen(struct_name: &str) -> Vec<TokenStream> {
 pub(crate) fn argumentgen(
     inner_nodes: Map<String, Value>,
     struct_name: &str,
-) -> TypegenResult<(utils::FourXs, Vec<TokenStream>)> {
+) -> TypegenResult<Vec<TokenStream>> {
     let ident = callsite_ident(struct_name);
     let field_data = fieldinterpreters::handle_enumerated_fields(inner_nodes)?;
     let field_type = field_data.indexed_type;
@@ -174,7 +174,7 @@ pub(crate) fn argumentgen(
         );
     )];
     generated_code.extend(field_data.inner_structs);
-    Ok((utils::FourXs::False, generated_code))
+    Ok(generated_code)
 }
 
 pub(crate) fn alias(

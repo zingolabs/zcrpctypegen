@@ -139,7 +139,7 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
             0 => generators::emptygen(&type_name),
             1 => match arg_sets.pop().unwrap() {
                 serde_json::Value::Object(args) => {
-                    generators::argumentgen(args, &type_name).map(|x| x.1)?
+                    generators::argumentgen(args, &type_name)?
                 }
                 _ => panic!(
                     "Recieved arguments not in object format for file {}",
