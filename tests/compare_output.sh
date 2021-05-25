@@ -1,5 +1,5 @@
 file_path="./tests/data/observed/"
-cargo test
+cargo test integration
 if [ "$(ls -1 $file_path)" = '' ]; then
     echo All tests passed! Exiting.
 else
