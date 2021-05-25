@@ -59,23 +59,25 @@ pub(crate) struct EnumeratedFieldsInfo {
     pub(crate) indexed_type: Vec<TokenStream>,
     pub(crate) inner_structs: Vec<TokenStream>,
 }
+fn process_name_hint(mut name_hint: String) -> String {
+    match name_hint.parse::<u8>() {
+        Ok(_) => name_hint.insert_str(0, "Arg"),
+        Err(_) => name_hint = name_hint[2..].to_string(),
+    }
+    under_to_camel(&name_hint)
+}
 pub(crate) fn handle_enumerated_fields(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
 ) -> TypegenResult<EnumeratedFieldsInfo> {
+    //! inner_node Values might be terminal
     let mut indexed_type: Vec<TokenStream> = Vec::new();
     let mut inner_structs: Vec<TokenStream> = Vec::new();
-    let inner_nodes_sorted = sort_nodes(inner_nodes);
-    for (mut name_hint, val) in inner_nodes_sorted {
+    for (mut raw_name_hint, val) in sort_nodes(inner_nodes) {
         let mut optional = false;
-        handle_option(&mut name_hint, &mut optional);
-        match name_hint.parse::<u8>() {
-            Ok(_) => name_hint.insert_str(0, "Arg"),
-            Err(_) => name_hint = name_hint[2..].to_string(),
-        }
-        name_hint = camel_to_under(&name_hint);
-
+        handle_option(&mut raw_name_hint, &mut optional);
+        let name_hint = process_name_hint(raw_name_hint);
         let (mut field_type, new_struct, _terminal_enum) =
-            super::tokenize::value(&under_to_camel(&name_hint), val)?;
+            super::tokenize::value(&name_hint, val)?;
         inner_structs.extend(new_struct);
         if optional {
             use std::str::FromStr as _;

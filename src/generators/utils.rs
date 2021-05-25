@@ -50,6 +50,7 @@ pub(crate) fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
 }
 
 pub(super) fn sort_nodes(nodes: Map<String, Value>) -> Vec<(String, Value)> {
+    //! This depends on keys having names like `1_foo 2_spam`...
     let mut nodes_as_vec = nodes.into_iter().collect::<Vec<(String, Value)>>();
     nodes_as_vec.sort_by(|(key1, _), (key2, _)| key1.cmp(&key2));
     nodes_as_vec
