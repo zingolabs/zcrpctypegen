@@ -122,6 +122,16 @@ pub(crate) fn inner_enumgen(
     Ok(inner_structs)
 }
 
+fn add_pub_keywords(tokens: &mut Vec<TokenStream>) {
+    *tokens = tokens
+        .into_iter()
+        .map(|ts| match ts.clone().into_iter().next() {
+            None | Some(proc_macro2::TokenTree::Punct(_)) => ts.clone(),
+            _ => quote!(pub #ts),
+        })
+        .collect();
+}
+
 pub(crate) fn namedfield_structgen(
     inner_nodes: Map<String, Value>,
     struct_name: &str,
@@ -132,7 +142,7 @@ pub(crate) fn namedfield_structgen(
     let mut outerattr_or_identandtype = field_data.outerattr_or_identandtype;
     let body = match field_data.case {
         utils::FourXs::False => {
-            utils::add_pub_keywords(&mut outerattr_or_identandtype);
+            add_pub_keywords(&mut outerattr_or_identandtype);
             quote!(
                 pub struct #ident {
                     #(#outerattr_or_identandtype)*
@@ -277,6 +287,29 @@ mod test {
             //! callsite_ident currently panics on invalid Idents.
             //! Maybe we should change this.
             let _observed_empty_struct_vec = emptygen("1nvalid");
+        }
+    }
+    mod add_pub_keywords {
+        use super::*;
+        #[test]
+        fn and_not_to_attrs() {
+            let mut startcode = vec![
+                quote!(field_one: foo,),
+                quote!(field_two: bar,),
+                quote!(#[some_attribute]),
+                quote!(attributed_field: squelch,),
+            ];
+            add_pub_keywords(&mut startcode);
+            let expected_code = quote!(
+                pub field_one: foo,
+                pub field_two: bar,
+                #[some_attribute]
+                pub attributed_field: squelch,
+            );
+            assert_eq!(
+                startcode.into_iter().collect::<TokenStream>().to_string(),
+                expected_code.to_string()
+            );
         }
     }
 }

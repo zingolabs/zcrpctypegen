@@ -1,10 +1,48 @@
-use crate::generators::utils::{
-    handle_option, handle_options_and_keywords, sort_nodes,
-};
 use crate::utils::{callsite_ident, camel_to_under, under_to_camel};
 use crate::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
+use serde_json::{Map, Value};
+
+fn handle_options_and_keywords(
+    serde_rename: &mut Option<TokenStream>,
+    field_name: &mut String,
+    optional: &mut bool,
+) -> () {
+    if field_name.starts_with("Option<") {
+        *field_name = field_name
+            .trim_end_matches(">")
+            .trim_start_matches("Option<")
+            .to_string();
+        *optional = true;
+    }
+    if crate::utils::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
+        *serde_rename = Some(
+            format!("#[serde(rename = \"{}\")]", &field_name)
+                .parse()
+                .unwrap(),
+        );
+        field_name.push_str("_field");
+    }
+}
+
+fn handle_option(name_hint: &mut String, optional: &mut bool) -> () {
+    if name_hint.starts_with("Option<") {
+        *name_hint = name_hint
+            .trim_end_matches(">")
+            .trim_start_matches("Option<")
+            .to_string();
+        *optional = true;
+    }
+}
+
+fn sort_nodes(nodes: Map<String, Value>) -> Vec<(String, Value)> {
+    //! This depends on keys having names like `1_foo 2_spam`...
+    let mut nodes_as_vec = nodes.into_iter().collect::<Vec<(String, Value)>>();
+    nodes_as_vec.sort_by(|(key1, _), (key2, _)| key1.cmp(&key2));
+    nodes_as_vec
+}
+
 pub(crate) struct NamedFieldsInfo {
     pub(crate) case: super::utils::FourXs,
     pub(crate) outerattr_or_identandtype: Vec<TokenStream>,
@@ -114,5 +152,49 @@ mod test {
             expected_output.indexed_type[0].to_string(),
             observed_output.indexed_type[0].to_string()
         );
+    }
+    #[test]
+    fn handle_options_and_keywords_non_optional_non_keyword() {
+        let mut observed_serde_rename = None;
+        let mut observed_field_name = "fooople".to_string();
+        let mut observed_option = false;
+        handle_options_and_keywords(
+            &mut observed_serde_rename,
+            &mut observed_field_name,
+            &mut observed_option,
+        );
+        assert!(observed_serde_rename.is_none());
+        assert_eq!(observed_field_name, "fooople".to_string());
+        assert_eq!(observed_option, false);
+    }
+    #[test]
+    fn handle_options_and_keywords_optional_keyword() {
+        let mut observed_serde_rename = None;
+        let mut observed_field_name = "Option<yield>".to_string();
+        let mut observed_option = false;
+        handle_options_and_keywords(
+            &mut observed_serde_rename,
+            &mut observed_field_name,
+            &mut observed_option,
+        );
+        assert!(observed_serde_rename.is_some());
+        assert_eq!(observed_field_name, "yield_field".to_string());
+        assert_eq!(observed_option, true);
+    }
+    #[test]
+    fn handle_option_true() {
+        let mut observed_name_hint = "Option<struct>".to_string();
+        let mut observed_option = false;
+        handle_option(&mut observed_name_hint, &mut observed_option);
+        assert_eq!(observed_name_hint, "struct".to_string());
+        assert_eq!(observed_option, true);
+    }
+    #[test]
+    fn handle_option_false() {
+        let mut observed_name_hint = "mimblewimble".to_string();
+        let mut observed_option = false;
+        handle_option(&mut observed_name_hint, &mut observed_option);
+        assert_eq!(observed_name_hint, "mimblewimble".to_string());
+        assert_eq!(observed_option, false);
     }
 }
