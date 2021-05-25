@@ -242,7 +242,7 @@ mod test {
     use super::*;
     mod build_argumentenum_tuplevariant {
         #[test]
-        fn happy() {
+        fn happy_path() {
             use super::*;
             use serde_json::json;
             let mut fields = Map::new();
