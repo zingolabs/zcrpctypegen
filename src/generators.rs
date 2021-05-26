@@ -162,8 +162,7 @@ pub(crate) fn namedfield_structgen(
 pub(crate) fn emptygen(struct_name: &str) -> Vec<TokenStream> {
     let ident = callsite_ident(struct_name);
     vec![quote!(
-        #[derive(Debug, serde::Deserialize, serde::Serialize)]
-        pub struct #ident;
+        pub type #ident = ();
     )]
 }
 
@@ -261,12 +260,11 @@ mod test {
         use super::*;
         #[test]
         fn happy_path() {
-            let observed_empty_struct_vec = emptygen("InsertNameHere");
+            let observed_empty_struct_vec = emptygen("ModNameResponse");
             assert_eq!(1, observed_empty_struct_vec.len());
             let observed_empty_struct = &observed_empty_struct_vec[0];
             let expected_empty_struct = quote!(
-                #[derive(Debug, serde::Deserialize, serde::Serialize)]
-                pub struct InsertNameHere;
+                pub type ModNameResponse = ();
             );
             assert_eq!(
                 expected_empty_struct.to_string(),

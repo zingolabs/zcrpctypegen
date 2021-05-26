@@ -136,7 +136,7 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
     let (type_name, file_body) = get_name_and_body_from_file(file);
     let mut output = match file_body {
         serde_json::Value::Array(mut arg_sets) => match arg_sets.len() {
-            0 => generators::emptygen(&type_name),
+            0 => Vec::new(),
             1 => match arg_sets.pop().unwrap() {
                 serde_json::Value::Object(args) => {
                     generators::argumentgen(args, &type_name)?
