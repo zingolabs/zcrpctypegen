@@ -51,8 +51,6 @@ pub mod getaddressdeltas {
 }
 pub mod getblockchaininfo {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct GetblockchaininfoArguments;
-    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Consensus {
         pub chaintip: String,
         pub nextblock: String,
@@ -104,8 +102,6 @@ pub mod getblockchaininfo {
     }
 }
 pub mod getinfo {
-    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct GetinfoArguments;
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct GetinfoResponse {
         pub proxy: Option<String>,
