@@ -195,7 +195,6 @@ fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
 /// std::process, and std::fs.
 const TYPEGEN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 fn output_path(input_basename: &str) -> std::path::PathBuf {
-    use std::ffi::OsString;
     let outstring = format!(
         "./output/{}_{}/rpc_response_types.rs",
         input_basename, TYPEGEN_VERSION
