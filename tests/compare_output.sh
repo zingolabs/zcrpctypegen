@@ -1,12 +1,13 @@
-file_path="./tests/data/observed/"
 cargo test integration
-if [ "$(ls -1 $file_path)" = '' ]; then
+test_dirs=$(ls -1 ./output/ | grep test_)
+if [ "$test_dirs" = '' ]; then
     echo All tests passed! Exiting.
+    exit
 else
     echo Melding outputs of failed integration tests
+    for test_dir in $test_dirs
+    do
+        expected_file_name=$(echo $test_dir | sed -e 's/_0.3.0/.rs/')
+        meld ./tests/data/expected/$expected_file_name ./output/$test_dir/rpc_response_types.rs 
+    done
 fi
-for file_name in `ls -1 $file_path`
-do
-    #echo $file_path/$file_name
-    meld $file_path/$file_name `echo $file_path/$file_name | sed s/observed/expected/` & &>/dev/null
-done
