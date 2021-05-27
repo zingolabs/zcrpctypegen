@@ -11,21 +11,19 @@ macro_rules! make_tests {
 
 mod integration {
     make_tests!(
-        basic_struct,
-        quizface_output,
-        terminal_alias,
-        vec_terminal,
-        vec_struct,
-        deduplication
+        test_basic_struct,
+        test_quizface_output,
+        test_terminal_alias,
+        test_vec_terminal,
+        test_vec_struct,
+        test_deduplication
     );
+    const TYPEGEN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
     fn call_test(test_name: &str) {
+        let test_dir_name = format!("{}_{}", test_name, TYPEGEN_VERSION);
         let output = std::process::Command::new("cargo")
-            .args(&[
-                "run",
-                &format!("./tests/data/input/{}", test_name),
-                &format!("./tests/data/observed/{}.rs", test_name),
-            ])
+            .args(&["run", &format!("./tests/data/input/{}", &test_name)])
             .output()
             .expect("cargo run failed");
         assert!(
@@ -39,8 +37,8 @@ mod integration {
             test_name
         ));
         let observed = std::fs::read_to_string(format!(
-            "./tests/data/observed/{}.rs",
-            test_name
+            "./output/{}/rpc_response_types.rs",
+            test_dir_name
         ));
         let expected = expected.unwrap();
         let observed = observed.unwrap();
@@ -49,7 +47,6 @@ mod integration {
             "\n===Custom Format Follows===\nEXPECTED:\n{}\nOBSERVED:\n{}",
             expected, observed
         );
-        std::fs::remove_file(format!("./tests/data/observed/{}.rs", test_name))
-            .unwrap();
+        std::fs::remove_dir_all(format!("./output/{}", test_dir_name)).unwrap();
     }
 }

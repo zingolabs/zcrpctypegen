@@ -8,6 +8,7 @@ use error::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
 /// Process quizface-formatted response specifications from files, producing
 /// Rust types, in the `rpc_response_types.rs` file.
@@ -15,14 +16,15 @@ fn main() {
     let initial_comment = r#"//procedurally generated response types, note that zcashrpc-typegen
            //is in early alpha, and output is subject to change at any time.
 "#;
-    std::fs::write(output_path(), initial_comment).unwrap();
-    let input_files = std::fs::read_dir(&std::path::Path::new(
-        &std::env::args().nth(1).expect(
-            "Please pass an input directory of quizface interpretations.",
-        ),
-    ))
-    .unwrap()
-    .map(Result::unwrap);
+    let indir_name = &std::env::args()
+        .nth(1)
+        .expect("Please pass an input directory of quizface interpretations.");
+    let indir = &std::path::Path::new(indir_name);
+    let input_basename = indir.file_name().unwrap();
+
+    let output_path = output_path(&input_basename.to_string_lossy());
+    std::fs::write(&output_path, initial_comment).unwrap();
+    let input_files = std::fs::read_dir(indir).unwrap().map(Result::unwrap);
     let mut arguments = std::collections::BTreeMap::new();
     let mut responses = std::collections::BTreeMap::new();
     for filenode in input_files {
@@ -34,12 +36,15 @@ fn main() {
             panic!("WARNING: No arguments found for '{}'", name)
         }
         let mod_name = utils::get_mod_name(&name);
-        write_output_to_file(quote!(
-            pub mod #mod_name {
-                #args
-                #resp
-            }
-        ));
+        write_output_to_file(
+            quote!(
+                pub mod #mod_name {
+                    #args
+                    #resp
+                }
+            ),
+            &output_path,
+        );
     }
     for (name, _resp) in arguments {
         match name.as_str() {
@@ -93,15 +98,15 @@ fn dispatch_to_processors(
     }
 }
 
-fn write_output_to_file(code: TokenStream) {
+fn write_output_to_file(code: TokenStream, output_path: &PathBuf) {
     use std::io::Write as _;
     let mut outfile = std::fs::OpenOptions::new()
         .append(true)
-        .open(output_path())
+        .open(&output_path)
         .unwrap();
     outfile.write_all(code.to_string().as_bytes()).unwrap();
     assert!(std::process::Command::new("rustfmt")
-        .arg(output_path())
+        .arg(&output_path)
         .output()
         .unwrap()
         .status
@@ -189,24 +194,13 @@ fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
 /// This function provides input for the OS interface that we access via
 /// std::process, and std::fs.
 const TYPEGEN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
-fn output_path() -> std::path::PathBuf {
-    use std::ffi::OsString;
-    let input_dirname = "../quizface/output/";
-    let in_version = std::fs::read_dir(&input_dirname)
-        .expect(&format!("Missing interpretations in {}.", &input_dirname))
-        .map(|x| x.unwrap().file_name())
-        .collect::<Vec<OsString>>()
-        .pop()
-        .expect("Can't retrieve input dir name.");
+fn output_path(input_basename: &str) -> std::path::PathBuf {
     let outstring = format!(
         "./output/{}_{}/rpc_response_types.rs",
-        in_version
-            .into_string()
-            .expect("Couldn't get String from OsString."),
-        TYPEGEN_VERSION
+        input_basename, TYPEGEN_VERSION
     );
-    let outname = std::env::args().nth(2).unwrap_or(outstring);
-    let outpath = std::path::Path::new(&outname);
+    //let outname = std::env::args().nth(2).unwrap_or(outstring);
+    let outpath = std::path::Path::new(&outstring);
     std::fs::create_dir_all(outpath.parent().expect("Couldn't create parent."))
         .expect("Couldn't create outdir.");
     outpath.to_path_buf()
@@ -236,7 +230,7 @@ mod unit {
         #[test]
         fn process_response_getinfo() {
             let getinfo_path = std::path::Path::new(
-                "./tests/data/input/quizface_output/getinfo_response.json",
+                "./tests/data/input/test_quizface_output/getinfo_response.json",
             );
             let output = process_response(getinfo_path);
             assert_eq!(
