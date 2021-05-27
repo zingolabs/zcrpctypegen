@@ -185,7 +185,7 @@ fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
             .to_str()
             .unwrap()
             .strip_suffix(".json")
-            .unwrap()
+            .expect("File does not have .json extension!")
             .to_string(),
         file_body,
     )
@@ -338,9 +338,27 @@ mod test {
             panic!("Expected JsonError, recieved: {:#?}", err);
         }
     }
-    #[ignore]
     #[test]
-    fn get_data_no_json_suffix() {}
+    #[should_panic(expected = "File does not have .json extension!")]
+    fn get_data_no_json_suffix() {
+        use std::fs::File;
+        use std::path::Path;
+        let file_path = Path::new("./tests/data/observed/its_a_json_file");
+        let _ = std::fs::remove_file(file_path);
+        let mut file = File::create(file_path).unwrap();
+        use std::io::Write as _;
+        write!(
+            file,
+            "{}",
+            serde_json::json!(
+                "{
+                field: \"val\",
+                another: true,
+            }"
+            )
+        );
+        get_data(file_path);
+    }
     #[allow(unused_variables, unreachable_code)]
     #[ignore]
     #[test]
