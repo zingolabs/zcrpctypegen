@@ -277,7 +277,7 @@ mod test {
     fn dispatch_to_processors_invalid_utf8_in_fn() {
         //! reference:  https://doc.rust-lang.org/std/ffi/struct.OsString.html#examples-13
         let tests_dir: &str = "./tests/data/observed/invalid_utf8/";
-        std::fs::remove_dir_all(&tests_dir).unwrap();
+        let _ = std::fs::remove_dir_all(&tests_dir);
         std::fs::create_dir_all(&tests_dir).unwrap();
         let invalid_utf8_bytes: &[u8] = &[
             46, 47, 116, 101, 115, 116, 115, 47, 100, 97, 116, 97, 47, 111, 98,
@@ -298,7 +298,7 @@ mod test {
     #[test]
     fn dispatch_to_processors_invalid_fn_end() {
         let tests_dir: &str = "./tests/data/observed/invalid_fn_end/";
-        std::fs::remove_dir_all(&tests_dir).unwrap();
+        let _ = std::fs::remove_dir_all(&tests_dir);
         std::fs::create_dir_all(&tests_dir).unwrap();
         let stringy_input_inval_name =
             format!("{}/{}", tests_dir, "a_bad_end.json");
