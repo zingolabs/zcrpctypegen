@@ -210,7 +210,6 @@ fn output_path(input_basename: &str) -> std::path::PathBuf {
 fn from_file_deserialize(
     file_path: &std::path::Path,
 ) -> TypegenResult<serde_json::Value> {
-    dbg!(&file_path);
     let from_io_to_fs = error::FSError::from_io_error(file_path);
     let mut file = std::fs::File::open(file_path).map_err(&from_io_to_fs)?;
     let mut file_body = String::new();
@@ -318,7 +317,7 @@ mod test {
         let input_path = Path::new("not_a_real_file");
         let input_path_err = input_path.read_link().unwrap_err();
         let io_err_fn = crate::error::FSError::from_io_error(&input_path);
-        let expected = dbg!(io_err_fn(input_path_err));
+        let expected = io_err_fn(input_path_err);
         use error::TypegenError;
         if let Err(TypegenError::Filesystem(observed)) =
             from_file_deserialize(&input_path)
@@ -328,20 +327,32 @@ mod test {
     }
     #[test]
     fn from_file_deserialize_invalid_file_body_utf8() {
+        // Create test dir
         let tests_dir: &str =
             "./tests/data/observed/invalid_utf8_in_file_body/";
         let _ = std::fs::remove_dir_all(&tests_dir);
         std::fs::create_dir_all(&tests_dir).unwrap();
+
+        // write invalid utf8 into file
         use std::path::Path;
         let path_str =
-            &format!("{}/invalid_utf8_inside.notreallyjson", tests_dir);
+            &format!("{}invalid_utf8_inside.notreallyjson", tests_dir);
         let input_path = Path::new(&path_str);
-        let mut file = std::fs::File::create(input_path).unwrap();
-
-        use std::io::Write as _;
-        use std::write;
         let invalid_utf8_bytes: &[u8] = &[0x66, 0x6f, 0x80, 0x6f];
-        write!(file, "{}", "invalid_utf8_bytes");
+        std::fs::write(input_path, invalid_utf8_bytes);
+
+        // generate read_to_string error from invalid utf8 bytes
+        let mut file = std::fs::File::open(input_path).unwrap();
+        let mut body = String::new();
+        use std::io::Read;
+        let expected_err = dbg!(file.read_to_string(&mut body).unwrap_err());
+
+        use error::TypegenError;
+        if let Err(TypegenError::Filesystem(observed)) =
+            from_file_deserialize(&input_path)
+        {
+            dbg!(observed); //assert_eq!(expected, observed);
+        };
     }
     #[test]
     fn from_file_deserialize_invalid_file_body_json() {
