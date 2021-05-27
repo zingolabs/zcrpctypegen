@@ -356,7 +356,8 @@ mod test {
                 another: true,
             }"
             )
-        );
+        )
+        .unwrap();
         get_data(file_path);
     }
     #[allow(unused_variables, unreachable_code)]
