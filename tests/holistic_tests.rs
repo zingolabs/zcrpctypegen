@@ -23,7 +23,7 @@ mod integration {
     fn call_test(test_name: &str) {
         let test_dir_name = format!("{}_{}", test_name, TYPEGEN_VERSION);
         let output = std::process::Command::new("cargo")
-            .args(&["run", &format!("./tests/data/input/{}", &test_dir_name)])
+            .args(&["run", &format!("./tests/data/input/{}", &test_name)])
             .output()
             .expect("cargo run failed");
         assert!(
