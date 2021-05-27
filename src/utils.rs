@@ -17,6 +17,7 @@ pub(crate) fn get_mod_name(name: &str) -> proc_macro2::Ident {
 }
 
 pub(crate) fn callsite_ident(name: &str) -> proc_macro2::Ident {
+    assert!(!RUST_KEYWORDS.contains(&name));
     proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
 }
 pub(crate) fn under_to_camel(name: &str) -> String {
