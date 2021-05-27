@@ -281,7 +281,7 @@ mod test {
 
         let test_file = std::fs::File::create(os_str);
         for entry in std::fs::read_dir(tests_dir).unwrap() {
-            dbg!(&entry);
+            dbg!(&entry.file_name());
         }
     }
     #[ignore]
