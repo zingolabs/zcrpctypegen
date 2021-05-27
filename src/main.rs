@@ -294,6 +294,7 @@ mod test {
             &mut BTreeMap::new(),
         );
     }
+    #[should_panic(expected = "Bad file name: 'a_bad_end.json'")]
     #[test]
     fn dispatch_to_processors_invalid_fn_end() {
         dbg!(std::fs::remove_dir_all(TESTS_DIR));
