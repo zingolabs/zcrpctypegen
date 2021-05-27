@@ -65,7 +65,7 @@ fn dispatch_to_processors(
     responses: &mut BTreeMap<String, TokenStream>,
 ) {
     let file_name = filenode.file_name();
-    let file_name = file_name.to_string_lossy();
+    let file_name = file_name.to_str().expect("Invalid unicode in RPC name!");
     match file_name {
         name if name.ends_with("_response.json") => {
             match process_response(&filenode.path()) {
@@ -259,9 +259,24 @@ mod unit {
 #[cfg(test)]
 mod test {
     use super::*;
-    #[ignore]
     #[test]
-    fn dispatch_to_processors_invalid_utf8_in_fn() {}
+    #[cfg(target_family = "unix")]
+    fn dispatch_to_processors_invalid_utf8_in_fn() {
+        //! reference:  https://doc.rust-lang.org/std/ffi/struct.OsString.html#examples-13
+        use std::ffi::OsStr;
+        use std::path::Path;
+        let invalid_utf8_bytes = [0x66, 0x6f, 0x80, 0x6f];
+        let sparkle_heart_bytes = vec![240, 159, 146, 150];
+        let sparkle_heart = String::from_utf8_lossy(&sparkle_heart_bytes);
+        let bad_strig = String::from_utf8_lossy(&invalid_utf8_bytes);
+        dbg!(&bad_strig);
+        let os_str: &std::ffi::OsStr =
+            std::os::unix::ffi::OsStrExt::from_bytes(&invalid_utf8_bytes);
+        dbg!(&os_str);
+
+        // let os_str =
+        //let test_dir = std::fs::create_dir(sparkle_heart);
+    }
     #[ignore]
     #[test]
     fn dispatch_to_processors_invalid_fn_end() {}
