@@ -328,17 +328,20 @@ mod test {
     }
     #[test]
     fn from_file_deserialize_invalid_file_body_utf8() {
+        let tests_dir: &str =
+            "./tests/data/observed/invalid_utf8_in_file_body/";
+        let _ = std::fs::remove_dir_all(&tests_dir);
+        std::fs::create_dir_all(&tests_dir).unwrap();
         use std::path::Path;
-        let input_path = Path::new("not_a_real_file");
-        let input_path_err = input_path.read_link().unwrap_err();
-        let io_err_fn = crate::error::FSError::from_io_error(&input_path);
-        let expected = dbg!(io_err_fn(input_path_err));
-        use error::TypegenError;
-        if let Err(TypegenError::Filesystem(observed)) =
-            from_file_deserialize(&input_path)
-        {
-            assert_eq!(expected, observed);
-        };
+        let path_str =
+            &format!("{}/invalid_utf8_inside.notreallyjson", tests_dir);
+        let input_path = Path::new(&path_str);
+        let mut file = std::fs::File::create(input_path).unwrap();
+
+        use std::io::Write as _;
+        use std::write;
+        let invalid_utf8_bytes: &[u8] = &[0x66, 0x6f, 0x80, 0x6f];
+        write!(file, "{}", "invalid_utf8_bytes");
     }
     #[test]
     fn from_file_deserialize_invalid_file_body_json() {
