@@ -314,11 +314,14 @@ mod test {
     }
     #[test]
     fn from_file_deserialize_invalid_file_path() {
+        use std::io::{Error, ErrorKind};
         use std::path::Path;
-        let input_path = Path::new("not_a_real_file");
-        let expected = crate::error::FSError::from_io_error(input_path);
-        let observed = from_file_deserialize(&input_path);
-        assert_eq!(expected, observed);
+        let input_path = dbg!(Path::new("not_a_real_file").read_link());
+        //let expected = dbg!(crate::error::FSError::from_io_error(input_path));
+        //if let Err(observed) = from_file_deserialize(&input_path) {
+        //    dbg!(observed);
+        //};
+        //assert_eq!(expected, observed);
     }
     #[test]
     fn from_file_deserialize_invalid_file_body() {
