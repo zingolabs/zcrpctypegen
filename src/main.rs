@@ -259,6 +259,7 @@ mod unit {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[should_panic(expected = "Invalid unicode in RPC name!")]
     #[test]
     #[cfg(target_family = "unix")]
     fn dispatch_to_processors_invalid_utf8_in_fn() {
@@ -280,9 +281,17 @@ mod test {
         dbg!(&os_str);
 
         let test_file = std::fs::File::create(os_str);
-        for entry in std::fs::read_dir(tests_dir).unwrap() {
-            dbg!(&entry.file_name());
-        }
+        let input_direntry = std::fs::read_dir(tests_dir)
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap();
+        use std::collections::BTreeMap;
+        dispatch_to_processors(
+            input_direntry,
+            &mut BTreeMap::new(),
+            &mut BTreeMap::new(),
+        );
     }
     #[ignore]
     #[test]
