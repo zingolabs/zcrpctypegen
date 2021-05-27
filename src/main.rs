@@ -361,12 +361,21 @@ mod test {
         get_data(file_path);
     }
     #[allow(unused_variables, unreachable_code)]
-    #[ignore]
     #[test]
-    #[should_panic(expected = "Received {}, expected array")]
+    #[should_panic(expected = "Received \"Not an array!\", expected array")]
     fn process_response_non_array_body() {
-        //! This logic is (or was) duplicated in process_arguments
-        let fake_file_path = todo!();
-        let observed_pr_result = process_response(fake_file_path);
+        use std::{
+            fs::{remove_dir_all, File},
+            io::Write as _,
+            path::PathBuf,
+        };
+        let tests_dir: &str = "./tests/data/observed/non_array_body/";
+        let _ = remove_dir_all(&tests_dir);
+        std::fs::create_dir_all(&tests_dir).unwrap();
+        let file_path =
+            PathBuf::from([tests_dir, "testfile_response.json"].concat());
+        let mut file = File::create(&file_path).unwrap();
+        write!(file, "{}", serde_json::json!("Not an array!")).unwrap();
+        process_response(&file_path).unwrap();
     }
 }
