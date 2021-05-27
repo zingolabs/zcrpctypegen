@@ -29,8 +29,8 @@ impl FSError {
 
 #[derive(Debug)]
 pub struct JsonError {
-    err: serde_json::Error,
-    input: String,
+    pub err: serde_json::Error,
+    pub input: String,
 }
 
 impl JsonError {

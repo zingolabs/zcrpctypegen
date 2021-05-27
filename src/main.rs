@@ -320,10 +320,18 @@ mod test {
         let observed = from_file_deserialize(&input_path);
         assert_eq!(expected, observed);
     }
-
-    #[ignore]
     #[test]
-    fn from_file_deserialize_invalid_file_body() {}
+    fn from_file_deserialize_invalid_file_body() {
+        let file_path = std::path::Path::new("Cargo.lock");
+        let err = from_file_deserialize(file_path).unwrap_err();
+        if let error::TypegenError::Json(json_err) = err {
+            assert!(json_err.err.is_syntax());
+            assert_eq!(1, json_err.err.line());
+            assert_eq!(1, json_err.err.column());
+        } else {
+            panic!("Expected JsonError, recieved: {:#?}", err);
+        }
+    }
     #[ignore]
     #[test]
     fn get_data_no_json_suffix() {}
