@@ -259,12 +259,13 @@ mod unit {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::collections::BTreeMap;
+    const TESTS_DIR: &str = "./tests/data/observed/";
     fn create_direntries_for_dtp(
         file_name: &std::ffi::OsStr,
     ) -> std::fs::DirEntry {
-        let tests_dir = "./tests/data/observed/";
         let test_file = std::fs::File::create(file_name);
-        std::fs::read_dir(tests_dir)
+        std::fs::read_dir(TESTS_DIR)
             .unwrap()
             .next()
             .unwrap()
@@ -275,6 +276,8 @@ mod test {
     #[cfg(target_family = "unix")]
     fn dispatch_to_processors_invalid_utf8_in_fn() {
         //! reference:  https://doc.rust-lang.org/std/ffi/struct.OsString.html#examples-13
+        std::fs::remove_dir_all(TESTS_DIR);
+        std::fs::create_dir(TESTS_DIR);
         use std::ffi::OsStr;
         use std::path::Path;
         let invalid_utf8_bytes = [
@@ -285,16 +288,29 @@ mod test {
             std::os::unix::ffi::OsStrExt::from_bytes(&invalid_utf8_bytes);
         let input_direntry = create_direntries_for_dtp(&os_str);
 
-        use std::collections::BTreeMap;
         dispatch_to_processors(
             input_direntry,
             &mut BTreeMap::new(),
             &mut BTreeMap::new(),
         );
     }
-    #[ignore]
     #[test]
-    fn dispatch_to_processors_invalid_fn_end() {}
+    fn dispatch_to_processors_invalid_fn_end() {
+        dbg!(std::fs::remove_dir_all(TESTS_DIR));
+        dbg!(std::fs::create_dir(TESTS_DIR));
+        let stringy_input_inval_name = 
+        let input_invalid_name = std::ffi::OsStr::new(&format!(
+            "{}/{}",
+            TESTS_DIR, "a_bad_end.json"
+        ));
+        let input_direntry = create_direntries_for_dtp(&input_invalid_name);
+        dbg!(&input_direntry);
+        dispatch_to_processors(
+            input_direntry,
+            &mut BTreeMap::new(),
+            &mut BTreeMap::new(),
+        );
+    }
     #[ignore]
     #[test]
     fn from_file_deserialize_invalid_file_path() {}
