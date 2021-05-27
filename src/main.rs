@@ -327,7 +327,21 @@ mod test {
         };
     }
     #[test]
-    fn from_file_deserialize_invalid_file_body() {
+    fn from_file_deserialize_invalid_file_body_utf8() {
+        use std::path::Path;
+        let input_path = Path::new("not_a_real_file");
+        let input_path_err = input_path.read_link().unwrap_err();
+        let io_err_fn = crate::error::FSError::from_io_error(&input_path);
+        let expected = dbg!(io_err_fn(input_path_err));
+        use error::TypegenError;
+        if let Err(TypegenError::Filesystem(observed)) =
+            from_file_deserialize(&input_path)
+        {
+            assert_eq!(expected, observed);
+        };
+    }
+    #[test]
+    fn from_file_deserialize_invalid_file_body_json() {
         let file_path = std::path::Path::new("Cargo.lock");
         let err = from_file_deserialize(file_path).unwrap_err();
         if let error::TypegenError::Json(json_err) = err {
@@ -335,7 +349,7 @@ mod test {
             assert_eq!(1, json_err.err.line());
             assert_eq!(1, json_err.err.column());
         } else {
-            panic!("Expected JsonError, recieved: {:#?}", err);
+            panic!("Expected JsonError, received: {:#?}", err);
         }
     }
     #[test]
