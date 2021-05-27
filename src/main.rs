@@ -298,11 +298,10 @@ mod test {
     fn dispatch_to_processors_invalid_fn_end() {
         dbg!(std::fs::remove_dir_all(TESTS_DIR));
         dbg!(std::fs::create_dir(TESTS_DIR));
-        let stringy_input_inval_name = 
-        let input_invalid_name = std::ffi::OsStr::new(&format!(
-            "{}/{}",
-            TESTS_DIR, "a_bad_end.json"
-        ));
+        let stringy_input_inval_name =
+            format!("{}/{}", TESTS_DIR, "a_bad_end.json");
+        let input_invalid_name =
+            std::ffi::OsStr::new(&stringy_input_inval_name);
         let input_direntry = create_direntries_for_dtp(&input_invalid_name);
         dbg!(&input_direntry);
         dispatch_to_processors(
