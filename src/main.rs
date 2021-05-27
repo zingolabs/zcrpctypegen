@@ -318,11 +318,13 @@ mod test {
         let input_path = Path::new("not_a_real_file");
         let input_path_err = input_path.read_link().unwrap_err();
         let io_err_fn = crate::error::FSError::from_io_error(&input_path);
-        let expected = io_err_fn(input_path_err);
-        //if let Err(observed) = from_file_deserialize(&input_path) {
-        //    dbg!(observed);
-        //};
-        //assert_eq!(expected, observed);
+        let expected = dbg!(io_err_fn(input_path_err));
+        use error::TypegenError;
+        if let Err(TypegenError::Filesystem(observed)) =
+            from_file_deserialize(&input_path)
+        {
+            assert_eq!(expected, observed);
+        };
     }
     #[test]
     fn from_file_deserialize_invalid_file_body() {
