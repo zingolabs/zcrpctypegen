@@ -230,7 +230,7 @@ mod unit {
         #[test]
         fn process_response_getinfo() {
             let getinfo_path = std::path::Path::new(
-                "./tests/data/input/quizface_output/getinfo_response.json",
+                "./tests/data/input/test_quizface_output/getinfo_response.json",
             );
             let output = process_response(getinfo_path);
             assert_eq!(
