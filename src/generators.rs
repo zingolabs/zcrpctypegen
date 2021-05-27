@@ -160,6 +160,7 @@ pub(crate) fn namedfield_structgen(
 }
 
 pub(crate) fn emptygen(struct_name: &str) -> Vec<TokenStream> {
+    assert!(!crate::utils::RUST_KEYWORDS.contains(&struct_name));
     let ident = callsite_ident(struct_name);
     vec![quote!(
         pub type #ident = ();
@@ -271,10 +272,10 @@ mod test {
                 observed_empty_struct.to_string()
             );
         }
-        #[ignore]
+        #[should_panic]
         #[test]
         fn keyword_struct_name() {
-            //! Keyword checking happens before emptygen is called.
+            emptygen("super");
         }
         #[test]
         #[should_panic(expected = "\"1nvalid\" is not a valid Ident")]
