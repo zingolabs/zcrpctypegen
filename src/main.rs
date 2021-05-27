@@ -281,11 +281,6 @@ mod test {
             46, 47, 116, 101, 115, 116, 115, 47, 100, 97, 116, 97, 47, 111, 98,
             115, 101, 114, 118, 101, 100, 47, 0x66, 0x6f, 0x80, 0x6f,
         ];
-        //let sparkle_heart_bytes = vec![240, 159, 146, 150];
-        //let sparkle_heart = String::from_utf8_lossy(&sparkle_heart_bytes);
-        //let bad_strig = String::from_utf8_lossy(&invalid_utf8_bytes);
-        //dbg!(&tests_dir.as_bytes());
-        //dbg!(&bad_strig);
         let os_str: &std::ffi::OsStr =
             std::os::unix::ffi::OsStrExt::from_bytes(&invalid_utf8_bytes);
         let input_direntry = create_direntries_for_dtp(&os_str);
