@@ -210,6 +210,7 @@ fn output_path(input_basename: &str) -> std::path::PathBuf {
 fn from_file_deserialize(
     file_path: &std::path::Path,
 ) -> TypegenResult<serde_json::Value> {
+    dbg!(&file_path);
     let from_io_to_fs = error::FSError::from_io_error(file_path);
     let mut file = std::fs::File::open(file_path).map_err(&from_io_to_fs)?;
     let mut file_body = String::new();
@@ -305,7 +306,6 @@ mod test {
             std::ffi::OsStr::new(&stringy_input_inval_name);
         let input_direntry =
             create_direntries_for_dtp(&input_invalid_name, &tests_dir);
-        dbg!(&input_direntry);
         dispatch_to_processors(
             input_direntry,
             &mut BTreeMap::new(),
@@ -313,7 +313,14 @@ mod test {
         );
     }
     #[test]
-    fn from_file_deserialize_invalid_file_path() {}
+    fn from_file_deserialize_invalid_file_path() {
+        use std::path::Path;
+        let input_path = Path::new("not_a_real_file");
+        let expected = crate::error::FSError::from_io_error(input_path);
+        let observed = from_file_deserialize(&input_path);
+        assert_eq!(expected, observed);
+    }
+
     #[ignore]
     #[test]
     fn from_file_deserialize_invalid_file_body() {}
