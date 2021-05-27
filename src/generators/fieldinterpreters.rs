@@ -16,7 +16,7 @@ fn handle_options_and_keywords(
             .to_string();
         *optional = true;
     }
-    if crate::utils::RESERVED_KEYWORDS.contains(&field_name.as_str()) {
+    if crate::utils::RUST_KEYWORDS.contains(&field_name.as_str()) {
         *serde_rename = Some(
             format!("#[serde(rename = \"{}\")]", &field_name)
                 .parse()

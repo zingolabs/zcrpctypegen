@@ -1,4 +1,4 @@
-pub(crate) const RESERVED_KEYWORDS: &[&str] = &[
+pub(crate) const RUST_KEYWORDS: &[&str] = &[
     "as", "use", "break", "const", "continue", "crate", "else", "if", "enum",
     "extern", "false", "fn", "for", "if", "impl", "in", "for", "let", "loop",
     "match", "mod", "move", "mut", "pub", "impl", "ref", "return", "Self",
@@ -9,7 +9,7 @@ pub(crate) const RESERVED_KEYWORDS: &[&str] = &[
 ];
 
 pub(crate) fn get_mod_name(name: &str) -> proc_macro2::Ident {
-    callsite_ident(&if RESERVED_KEYWORDS.contains(&name) {
+    callsite_ident(&if RUST_KEYWORDS.contains(&name) {
         format!("{}_mod", name)
     } else {
         name.to_string()
