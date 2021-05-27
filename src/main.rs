@@ -279,7 +279,7 @@ mod test {
             std::os::unix::ffi::OsStrExt::from_bytes(&invalid_utf8_bytes);
         dbg!(&os_str);
 
-        //let test_dir = std::fs::create_dir(os_str);
+        let test_dir = std::fs::File::create(os_str);
     }
     #[ignore]
     #[test]
