@@ -259,6 +259,17 @@ mod unit {
 #[cfg(test)]
 mod test {
     use super::*;
+    fn create_direntries_for_dtp(
+        file_name: &std::ffi::OsStr,
+    ) -> std::fs::DirEntry {
+        let tests_dir = "./tests/data/observed/";
+        let test_file = std::fs::File::create(file_name);
+        std::fs::read_dir(tests_dir)
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap()
+    }
     #[should_panic(expected = "Invalid unicode in RPC name!")]
     #[test]
     #[cfg(target_family = "unix")]
@@ -273,19 +284,12 @@ mod test {
         //let sparkle_heart_bytes = vec![240, 159, 146, 150];
         //let sparkle_heart = String::from_utf8_lossy(&sparkle_heart_bytes);
         //let bad_strig = String::from_utf8_lossy(&invalid_utf8_bytes);
-        let tests_dir = "./tests/data/observed/";
-        dbg!(&tests_dir.as_bytes());
+        //dbg!(&tests_dir.as_bytes());
         //dbg!(&bad_strig);
         let os_str: &std::ffi::OsStr =
             std::os::unix::ffi::OsStrExt::from_bytes(&invalid_utf8_bytes);
-        dbg!(&os_str);
+        let input_direntry = create_direntries_for_dtp(&os_str);
 
-        let test_file = std::fs::File::create(os_str);
-        let input_direntry = std::fs::read_dir(tests_dir)
-            .unwrap()
-            .next()
-            .unwrap()
-            .unwrap();
         use std::collections::BTreeMap;
         dispatch_to_processors(
             input_direntry,
