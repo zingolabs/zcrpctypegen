@@ -260,12 +260,12 @@ mod unit {
 mod test {
     use super::*;
     use std::collections::BTreeMap;
-    const TESTS_DIR: &str = "./tests/data/observed/";
     fn create_direntries_for_dtp(
         file_name: &std::ffi::OsStr,
+        tests_dir: &str,
     ) -> std::fs::DirEntry {
         let test_file = std::fs::File::create(file_name);
-        std::fs::read_dir(TESTS_DIR)
+        std::fs::read_dir(tests_dir)
             .unwrap()
             .next()
             .unwrap()
@@ -276,17 +276,21 @@ mod test {
     #[cfg(target_family = "unix")]
     fn dispatch_to_processors_invalid_utf8_in_fn() {
         //! reference:  https://doc.rust-lang.org/std/ffi/struct.OsString.html#examples-13
+        let TESTS_DIR: &str = "./tests/data/observed/invalid_utf8/";
+        dbg!(&TESTS_DIR);
         std::fs::remove_dir_all(TESTS_DIR);
-        std::fs::create_dir(TESTS_DIR);
+        std::fs::create_dir_all(TESTS_DIR);
         use std::ffi::OsStr;
         use std::path::Path;
         let invalid_utf8_bytes = [
             46, 47, 116, 101, 115, 116, 115, 47, 100, 97, 116, 97, 47, 111, 98,
-            115, 101, 114, 118, 101, 100, 47, 0x66, 0x6f, 0x80, 0x6f,
+            115, 101, 114, 118, 101, 100, 47, 105, 110, 118, 97, 108, 105, 100,
+            95, 117, 116, 102, 56, 47, 0x66, 0x6f, 0x80, 0x6f,
         ];
         let os_str: &std::ffi::OsStr =
             std::os::unix::ffi::OsStrExt::from_bytes(&invalid_utf8_bytes);
-        let input_direntry = create_direntries_for_dtp(&os_str);
+        dbg!("invalid_utf8/".as_bytes());
+        let input_direntry = create_direntries_for_dtp(&os_str, &TESTS_DIR);
 
         dispatch_to_processors(
             input_direntry,
@@ -297,13 +301,15 @@ mod test {
     #[should_panic(expected = "Bad file name: 'a_bad_end.json'")]
     #[test]
     fn dispatch_to_processors_invalid_fn_end() {
-        dbg!(std::fs::remove_dir_all(TESTS_DIR));
-        dbg!(std::fs::create_dir(TESTS_DIR));
+        let TESTS_DIR: &str = "./tests/data/observed/invalid_fn_end/";
+        std::fs::remove_dir_all(TESTS_DIR);
+        std::fs::create_dir_all(TESTS_DIR);
         let stringy_input_inval_name =
             format!("{}/{}", TESTS_DIR, "a_bad_end.json");
         let input_invalid_name =
             std::ffi::OsStr::new(&stringy_input_inval_name);
-        let input_direntry = create_direntries_for_dtp(&input_invalid_name);
+        let input_direntry =
+            create_direntries_for_dtp(&input_invalid_name, &TESTS_DIR);
         dbg!(&input_direntry);
         dispatch_to_processors(
             input_direntry,
@@ -311,7 +317,6 @@ mod test {
             &mut BTreeMap::new(),
         );
     }
-    #[ignore]
     #[test]
     fn from_file_deserialize_invalid_file_path() {}
     #[ignore]
