@@ -316,6 +316,10 @@ mod test {
         use std::path::Path;
         let input_path = Path::new("not_a_real_file");
         let input_path_err = input_path.read_link().unwrap_err();
+
+        // Generate expected error_callback_fn "io_err_fn" that will behave
+        // as in from_file_deserialize for the observation of
+        // from_file_deserialize behavior
         let io_err_fn = crate::error::FSError::from_io_error(&input_path);
         let expected = io_err_fn(input_path_err);
         use error::TypegenError;
@@ -342,16 +346,15 @@ mod test {
         std::fs::write(input_path, invalid_utf8_bytes);
 
         // generate read_to_string error from invalid utf8 bytes
-        let mut file = std::fs::File::open(input_path).unwrap();
-        let mut body = String::new();
-        use std::io::Read;
-        let expected_err = dbg!(file.read_to_string(&mut body).unwrap_err());
+        let expected_err = std::fs::read_to_string(input_path).unwrap_err();
+        let io_err_fn = crate::error::FSError::from_io_error(&input_path);
+        let expected = io_err_fn(expected_err);
 
         use error::TypegenError;
         if let Err(TypegenError::Filesystem(observed)) =
             from_file_deserialize(&input_path)
         {
-            dbg!(observed); //assert_eq!(expected, observed);
+            assert_eq!(expected, observed);
         };
     }
     #[test]

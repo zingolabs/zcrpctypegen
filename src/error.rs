@@ -13,6 +13,7 @@ pub enum TypegenError {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FSError {
     message: String,
+    inner: String,
     location: Box<std::path::Path>,
 }
 
@@ -20,12 +21,10 @@ impl FSError {
     pub(crate) fn from_io_error(
         location: &std::path::Path,
     ) -> Box<dyn Fn(std::io::Error) -> Self + '_> {
-        Box::new(move |err: std::io::Error| {
-            dbg!(&err);
-            Self {
-                message: format!("{:?}", err.kind()),
-                location: Box::from(location),
-            }
+        Box::new(move |err: std::io::Error| Self {
+            message: format!("{:?}", err.kind()),
+            inner: err.into_inner().unwrap().to_string(),
+            location: Box::from(location),
         })
     }
 }
