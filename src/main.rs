@@ -211,11 +211,8 @@ fn from_file_deserialize(
     file_path: &std::path::Path,
 ) -> TypegenResult<serde_json::Value> {
     let from_io_to_fs = error::FSError::from_io_error(file_path);
-    let mut file = std::fs::File::open(file_path).map_err(&from_io_to_fs)?;
-    let mut file_body = String::new();
-    use std::io::Read as _;
-    file.read_to_string(&mut file_body)
-        .map_err(&from_io_to_fs)?;
+    let file_body =
+        std::fs::read_to_string(file_path).map_err(&from_io_to_fs)?;
     let file_body_json =
         serde_json::de::from_str(&file_body).map_err(|err| {
             error::JsonError::from_serde_json_error(err, file_body)
