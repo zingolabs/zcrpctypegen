@@ -343,7 +343,7 @@ mod test {
             &format!("{}invalid_utf8_inside.notreallyjson", tests_dir);
         let input_path = Path::new(&path_str);
         let invalid_utf8_bytes: &[u8] = &[0x66, 0x6f, 0x80, 0x6f];
-        std::fs::write(input_path, invalid_utf8_bytes);
+        let _ = std::fs::write(input_path, invalid_utf8_bytes);
 
         // generate read_to_string error from invalid utf8 bytes
         let expected_err = std::fs::read_to_string(input_path).unwrap_err();
