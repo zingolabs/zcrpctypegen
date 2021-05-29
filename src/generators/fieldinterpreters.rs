@@ -122,6 +122,9 @@ pub(crate) fn handle_enumerated_fields(
             field_type =
                 TokenStream::from_str(&format!("Option<{}>", field_type))
                     .unwrap();
+            indexed_type.push(
+                quote!(#[serde(skip_serializing_if = "Option::is_none")]),
+            );
         }
 
         indexed_type.push(quote!(#field_type,));
