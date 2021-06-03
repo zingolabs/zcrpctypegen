@@ -39,8 +39,8 @@ pub(crate) fn response_enumgen(
         })
         .collect::<TypegenResult<Vec<TokenStream>>>()?;
     inner_structs.push(quote!(
-            #[serde(untagged)]
             #[derive(Debug, serde::Deserialize, serde::Serialize)]
+            #[serde(untagged)]
             pub enum #ident {
                 #(#enum_code)*
             }
@@ -77,8 +77,8 @@ pub(crate) fn arguments_enumgen(
         })
         .collect::<TypegenResult<Vec<TokenStream>>>()?;
     inner_structs.push(quote!(
-            #[serde(untagged)]
             #[derive(Debug, serde::Deserialize, serde::Serialize)]
+            #[serde(untagged)]
             pub enum #ident {
                 #(#enum_code)*
             }
@@ -115,8 +115,8 @@ pub(crate) fn inner_enumgen(
         })
         .collect::<TypegenResult<Vec<TokenStream>>>()?;
     inner_structs.push(quote!(
-            #[serde(untagged)]
             #[derive(Debug, serde::Deserialize, serde::Serialize)]
+            #[serde(untagged)]
             pub enum #ident {
                 #(#enum_code)*
             }
