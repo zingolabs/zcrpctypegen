@@ -2,17 +2,27 @@
 //is in early alpha, and output is subject to change at any time.
 pub mod getaddressdeltas {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    #[serde(untagged)]
+    pub enum GetaddressdeltasArguments {
+        MultiAddress(Arg1),
+        Address(String),
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Arg1 {
         pub chain_info: Option<bool>,
         pub end: Option<rust_decimal::Decimal>,
         pub start: Option<rust_decimal::Decimal>,
         pub addresses: Vec<String>,
     }
-    #[serde(untagged)]
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub enum GetaddressdeltasArguments {
-        MultiAddress(Arg1),
-        Address(String),
+    #[serde(untagged)]
+    pub enum GetaddressdeltasResponse {
+        Regular(Vec<Regular>),
+        Verbose {
+            deltas: Vec<Deltas>,
+            end: End,
+            start: Start,
+        },
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Deltas {
@@ -39,16 +49,6 @@ pub mod getaddressdeltas {
     pub struct Start {
         pub hash: String,
         pub height: rust_decimal::Decimal,
-    }
-    #[serde(untagged)]
-    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub enum GetaddressdeltasResponse {
-        Regular(Vec<Regular>),
-        Verbose {
-            deltas: Vec<Deltas>,
-            end: End,
-            start: Start,
-        },
     }
 }
 pub mod getblockchaininfo {
